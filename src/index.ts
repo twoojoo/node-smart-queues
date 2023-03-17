@@ -1,2 +1,1 @@
-export { Queue } from "./Queue"
-export { MemoryStorage } from "./storage/Memory"
+export { SmartQueue } from "./Queue"

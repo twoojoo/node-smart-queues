@@ -1,41 +1,69 @@
-import { DEFAULT_KEY_EXTERNAL, DEFAULT_KEY_INTERNAL, DEFAULT_SHIFT_RATE } from "./constants"
+import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
+import { CloneCondition, ExecCallback, QueueItem, QueueKind, KeyRules } from "./types"
 import { Storage } from "./storage/Storage"
-import { CloneCondition, ExecCallback, QueueItem, QueueRules } from "./types"
+import { FileSystemStorage } from "./storage/FileSystem"
+import { MemoryStorage } from "./storage/Memory"
 
-export class Queue<T = any> {
+/**Init a Queue (FIFO by default, in Memory by default)
+ * @param name - provide a unique name for the queue
+ * @param shiftRate - provide the number of shifts per second (default: 60) */
+export function SmartQueue<T = any>(name: string, shiftRate: number = DEFAULT_SHIFT_RATE) {
+	return new Queue<T>(name, shiftRate)
+}
+
+class Queue<T = any> {
 	private storage: Storage<T>
 	private name: string
 	private shiftEnabled = false
 	private shiftRate: number
 
-	private rules: { [key: string]: QueueRules<T> } = {
-		[DEFAULT_KEY_INTERNAL]: {}
+	private priorities: string[] = []
+	private ignoreUnknownKeys: boolean = false
+
+	private globalRules: KeyRules<T> = {}
+	private keyRules: { [key: string]: KeyRules<T> } = {}
+
+	constructor(name: string, shiftRate: number = DEFAULT_SHIFT_RATE) {
+		this.name = name
+		this.storage = new MemoryStorage(name)	
+		this.shiftRate = 1000 / shiftRate
+		this.startShiftLoop()
 	}
 
-	constructor(name: string, storage: Storage<T>, shiftRate: number = DEFAULT_SHIFT_RATE) {
-		this.name = name
-		this.storage = storage	
-		this.shiftRate = shiftRate
-		this.startShiftLoop()
+	private orderKeysByPriority(): string[] {
+		const currentKeys = Object.keys(this.keyRules)
+		const notPrioritized = currentKeys.filter(key => !this.priorities.includes(key))
+
+		if (this.ignoreUnknownKeys) return this.priorities
+		return this.priorities.concat(notPrioritized)
 	}
 
 	private async startShiftLoop() {
 		while (true) {
+			const start = Date.now()
+			const oderedKeys = this.orderKeysByPriority()
 			if (this.shiftEnabled) {
-				for (let key in this.rules) {
-					const start = Date.now()
-					const keyRules = this.rules[key] || {}
+				for (let key of oderedKeys) {
+					const keyRules = this.keyRules[key] || {}
 
-					if (!keyRules.exec) continue
+					if (
+						!keyRules.exec &&
+						!keyRules.execAsync && 
+						!this.globalRules.exec &&
+						!this.globalRules.execAsync
+					) continue
 
 					if (!!keyRules.locked) {
-						if ((Date.now() - keyRules.lastLockTimestamp) >= keyRules.every) {
+						const lockSpan = keyRules.every || this.globalRules.every
+						if ((Date.now() - keyRules.lastLockTimestamp) >= lockSpan) {
 							this.unlockKey(key)
 						} else continue
 					}
 
 					const shiftSize = keyRules.shiftSize || 1
-					const output = await this.storage.shift(key, shiftSize)
+					const output = this.getKeyShiftKind(key) == "FIFO" ?
+						await this.storage.shiftFIFO(key, shiftSize) : 
+						await this.storage.shiftLIFO(key, shiftSize)
 					
 					this.shiftEnabled = false
 					for (let count of Object.values(output.storedCount)) 
@@ -43,15 +71,24 @@ export class Queue<T = any> {
 							this.shiftEnabled = true
 
 					if (output.items.length != 0) {
-						for (let item of output.items) 
-							await keyRules.exec(item.value)
+						for (let item of this.parseItemsPost(key, output.items)) {
+							if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
+								if (this.keyRules[key].exec) await this.keyRules[key].exec(item.value, key)
+								else if (this.keyRules[key].execAsync) this.keyRules[key].execAsync(item.value, key)
+							} else if (this.globalRules.exec || this.globalRules.execAsync) {
+								if (this.globalRules.exec) await this.globalRules.exec(item.value, key)
+								else if (this.globalRules.execAsync) this.globalRules.execAsync(item.value, key)
+							}
+						}
 
-						if (keyRules.every) this.lockKey(key)
+						if (keyRules.every || this.globalRules.every) this.lockKey(key)
 
 						const end = Date.now()
-						const duration = end - start
-						if (duration < this.shiftRate)
-							await new Promise(r => setTimeout(() => r(0), this.shiftRate - duration))
+						const timeSpent = end - start
+						if (timeSpent < this.shiftRate) 
+							await new Promise(r => setTimeout(() => r(0), this.shiftRate - timeSpent))
+
+						break //break every time that something get flushed from the queue in order to recalculate priorities
 					}
 				}
 			} else await new Promise(r => setTimeout(() => r(0), this.shiftRate || DEFAULT_SHIFT_RATE))
@@ -59,36 +96,40 @@ export class Queue<T = any> {
 	}
 
 	private lockKey(key: string) {
-		this.rules[key].locked = true
-		this.rules[key].lastLockTimestamp = Date.now()
-		// const delay = this.rules[key].every
-		// console.log(new Date(), "#> locked", key, "for", delay, "ms")
+		this.keyRules[key].locked = true
+		this.keyRules[key].lastLockTimestamp = Date.now()
 	}
 
 	private unlockKey(key: string) {
-		this.rules[key].locked = false
-		this.rules[key].lastLockTimestamp = undefined
-		// console.log(new Date(), "#> unlocked", key)
+		this.keyRules[key].locked = false
+		this.keyRules[key].lastLockTimestamp = undefined
 	}
 
-	/***/
+	/**Push an item in the queue for a certain key
+	 * @param key - provide a key (* refers to all keys and will throw an error when used as a key)
+	 * @param item - item to be pushed in the queue*/
 	async push(key: string, item: T) {
-		key = this.parseKey(key)
+		if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
+
+		if (this.ignoreUnknownKeys) 
+			if (!this.priorities.includes(key))
+				return
+
+		this.parseKey(key)
 
 		const queueItem: QueueItem<T> = {
 			pushTimestamp: Date.now(),
 			value: item
 		} 
 
-		if (!!this.rules[key].clonePre) {
+		if (this.getRule(key, "clonePre")) {
 			let toBeCloned = true
 
-			if (this.rules[key].clonePreCondition) {
-				toBeCloned = this.rules[key].clonePreCondition(item)
-			}
+			if (this.getRule(key, "clonePreCondition")) 
+				toBeCloned = this.getRule(key, "clonePreCondition")()
 
 			if (toBeCloned) {
-				for (let i = 0; i < this.rules[key].clonePre; i++) {
+				for (let i = 0; i < this.getRule(key, "clonePre"); i++) {
 					await this.storage.push(key, queueItem)
 				}
 			} else await this.storage.push(key, queueItem)
@@ -97,53 +138,158 @@ export class Queue<T = any> {
 		this.shiftEnabled = true
 	}
 
-	/***/
-	async shift(key: string = DEFAULT_KEY_EXTERNAL, count: number = 1): Promise<T | T[]> {
-		if (count == 0) return
-
-		key = this.parseKey(key)
-
-		let items = (await this.storage.shift(key, count)).items
-
-		if (count == 1) return items[0].value
-		else return items.map(i => i.value)
+	/**Set FIFO behaviour (default). If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
+	 * @param key - provide a key (* refers to all keys)*/
+	fifo(key: string = "*") {
+		this.parseKey(key)
+		this.setRule(key, "kind", "FIFO")
+		return this
 	}
 
+	/**Set LIFO behaviour. If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
+	 * @param key - provide a key (* refers to all keys)*/
+	lifo(key: string = "*") {
+		this.parseKey(key)
+		this.setRule(key, "kind", "LIFO")
+		return this
+	}
+
+	/**Set keys priority (fist keys in the array have higher priority)
+	* @param key - provide a key (* refers to all keys)
+	* @param ignoreUnknownKeys - ignore all pushed items whose key is not included in the provided priority array*/
+	priority(keys: string[], ignoreUnknownKeys: boolean = false) {
+		this.ignoreUnknownKeys = ignoreUnknownKeys
+		this.priorities = keys
+		return this
+	} 
+
+	/**Set a callback to be executed syncronously (awaited if async) when flushing items for a specific key
+	* @param key - provide a key (* refers to all keys)
+	* @param callback - (item, key?) => { ..some action.. } [can be async]*/
 	exec(key: string, callback: ExecCallback<T>) {
-		key = this.parseKey(key)
-		this.rules[key].exec = callback
+		this.parseKey(key)
+		this.setRule(key, "execAsync", undefined)
+		this.setRule(key, "exec", callback)
 		return this
 	}
 
-	shiftSize(key: string, count: number) {
-		key = this.parseKey(key)
-		this.rules[key].shiftSize = count
+	/**Set a callback to be executed asyncronously (not awaited if async) when flushing items for a specific key
+	* @param key - provide a key (* refers to all keys)
+	* @param callback - (item, key?) => { ..some action.. } [can be async]*/
+	execAsync(key: string, callback: ExecCallback<T>) {
+		this.parseKey(key)
+		this.setRule(key, "exec", undefined)
+		this.setRule(key, "execAsync", callback)
 		return this
 	}
 
+	/**Set the number of items to flush at one time (the exec calback is called once for each item separately)
+	* @param key - provide a key (* refers to all keys)
+	* @param size - flush size*/
+	flushSize(key: string, size: number) {
+		this.parseKey(key)
+		this.setRule(key, "shiftSize", size)
+		return this
+	}
+
+	/**Set the number of milliseconds that the queue has to wait befor flushing again for a specific key (net of flush execution time)
+	* @param key - provide a key (* refers to all keys)
+	* @param delay - milliseconds*/
 	every(key: string, delay: number) {
-		key = this.parseKey(key)
-		this.rules[key].every = delay
+		this.parseKey(key)
+		this.setRule(key, "every", delay)
 		return this
 	}
 
+	/**Clone items of a specific key n times when pushing them from the queue
+	 * @param key - provide a key (* refers to all keys)
+	 * @param count - provide the number of clones*/
 	clonePre(key: string, count: number, condition?: CloneCondition<T>) {
-		key = this.parseKey(key)
-		this.rules[key].clonePre = count
-		this.rules[key].clonePreCondition = condition
+		this.parseKey(key)
+		this.setRule(key, "clonePre", count)
+		this.setRule(key, "clonePreCondition", condition)
 		return this
 	}
 
+	/**Clone items of a specific key n times when flushing them from the queue
+	 * @param key - provide a key (* refers to all keys)
+	 * @param count - provide the number of clones*/
 	clonePost(key: string, count: number, condition?: CloneCondition<T>) {
-		key = this.parseKey(key)
-		this.rules[key].clonePost = count
-		this.rules[key].clonePostCondition = condition
+		this.parseKey(key)
+		this.setRule(key, "clonePost", count)
+		this.setRule(key, "clonePostCondition", condition)
 		return this
 	}
 
-	private parseKey(key: string) {		
-		if (key == DEFAULT_KEY_INTERNAL) return DEFAULT_KEY_INTERNAL
-		if (!this.rules[key]) this.rules[key] = {}
-		return key
+	/**register default key rules and return true if key is the global character*/
+	private parseKey(key: string): boolean {
+		if (key == ALL_KEYS_CH) return true
+		if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRulse()
+		return false
+	}
+
+	/**Key kind overrides queue kind*/
+	private getKeyShiftKind(key: string): QueueKind {
+		if (key == ALL_KEYS_CH) return this.globalRules.kind
+		if (this.keyRules[key].kind == "FIFO") return "FIFO"
+		if (this.keyRules[key].kind == "LIFO") return "LIFO"
+		return this.globalRules.kind
+	}
+
+	private setRule(key: string, rule: string, value: any) {
+		if (!rule) return
+		if (key == ALL_KEYS_CH) this.globalRules[rule] = value
+		else this.keyRules[key][rule] = value
+	}
+
+	private getRule(key: string, rule: string) {
+		if (key != ALL_KEYS_CH) return this.keyRules[key][rule]
+		else return this.globalRules[rule]
+	}
+
+	private defaultKeyRulse(): KeyRules<T> {
+		return {}
+	}
+
+	/**Clones items if a clonePost rule is provided for the key or as a global rule*/
+	private parseItemsPost(key: string, items: QueueItem<T>[]): QueueItem<T>[] {
+		let clonesNum: number
+		let cloneCondition: CloneCondition<T>
+
+		if (this.keyRules[key].clonePost) {
+			clonesNum = this.keyRules[key].clonePost
+			cloneCondition = this.keyRules[key].clonePostCondition
+		} else if (this.globalRules.clonePost) {
+			clonesNum = this.globalRules.clonePost
+			cloneCondition = this.globalRules.clonePostCondition
+		}
+
+		if (!clonesNum) return items
+		else return items.flatMap(i => {
+			const toBeCloned = cloneCondition ? cloneCondition(i.value) : true
+			if (toBeCloned) {
+				const clonedItems = []
+
+				for (let j = 0; j < clonesNum; j++) 
+					clonedItems.push(i)
+
+				return clonedItems
+			} else return [i]
+		})
+	}
+
+	// STORAGE SYSTEMS
+
+	/**Set a FS storage
+	 * @param file - provide the path to the storage file (can be the same accross different queues)*/
+	fileSystemStorage(file: string) {
+		this.storage = new FileSystemStorage(this.name, file)
+		return this
+	}
+
+	/**Set an in Memory storage (default)*/
+	inMemoryStorage() {
+		this.storage = new MemoryStorage(this.name)
+		return this
 	}
 }
