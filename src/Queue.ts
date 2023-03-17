@@ -1,4 +1,4 @@
-import { CloneCondition, ExecCallback, IgnoreItemCondition, OnPushCallback, PriorityOptions, QueueItem, QueueKind, QueueOptions, Rules } from "./types"
+import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, QueueItem, QueueKind, Rules } from "./types"
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
@@ -7,17 +7,16 @@ import { registerNewQueue } from "./pool"
 import { shuffleArray } from "./utils"
 
 /**Init a Queue (FIFO by default, in Memory by default)
- * @param name - provide a unique name for the queue
- * @param shiftRate - provide the number of shifts per second (default: 60) */
-export function SmartQueue<T = any>(name: string, options: QueueOptions = {}) {
-	return new Queue<T>(name, options)
+ * @param name - provide a unique name for the queue*/
+export function SmartQueue<T = any>(name: string) {
+	return new Queue<T>(name)
 }
 
 export class Queue<T = any> {
 	private storage: Storage<T>
-	private logger: boolean = true
+	private _logger: boolean = false
 	private name: string
-	private shiftRate: number
+	private shiftRate: number = 1000 / DEFAULT_SHIFT_RATE
 
 	private looping: boolean = false
 	private paused: boolean = false
@@ -31,11 +30,9 @@ export class Queue<T = any> {
 	private globalRules: Rules<T> = {}
 	private keyRules: { [key: string]: Rules<T> } = {}
 
-	constructor(name: string, options: QueueOptions = {}) {
-		if (options.logger === false) this.logger = false
+	constructor(name: string) {
 		this.name = name
 		this.storage = new MemoryStorage(name)	
-		this.shiftRate = 1000 / (options.shiftRate || DEFAULT_SHIFT_RATE)
 		registerNewQueue(this)
 	}
 
@@ -45,7 +42,7 @@ export class Queue<T = any> {
 
 	/**Starts the queue*/
 	start() {
-		if (this.logger) console.log(new Date(), `#> starting queue`, this.name)
+		if (this._logger) console.log(new Date(), `#> starting queue`, this.name)
 
 		this.paused = false
 		if (!this.looping) this.startShiftLoop()
@@ -56,7 +53,7 @@ export class Queue<T = any> {
 	/** Pause the queue (pause indefinitely if timer is not provided)
 	 * @param timer - set a timer for the queue restart (calls start() after the timer has expiret)*/
 	pause(timer?: number) {
-		if (this.logger) console.log(new Date(), `#> pausing queue`, this.name, timer ? `for ${timer}ms` : "indefinitely")
+		if (this._logger) console.log(new Date(), `#> pausing queue`, this.name, timer ? `for ${timer}ms` : "indefinitely")
 
 		this.paused = true
 		this.looping = false
@@ -88,7 +85,7 @@ export class Queue<T = any> {
 	private calculatePriority(): string[] {
 		const currentKeys = Object.keys(this.keyRules)
 
-		if (this.randomizePriority) 
+		if (this.randomized) 
 			return shuffleArray(currentKeys)
 		
 		const notPrioritized = currentKeys.filter(key => !this.priorities.includes(key))
@@ -132,13 +129,12 @@ export class Queue<T = any> {
 
 					if (output.items.length != 0) {
 						for (let item of this.parseItemsPost(key, output.items)) {
-							if (this.logger) console.log(new Date(), `#> flushed item - queue: ${this.name} - key: ${key}`)
 							if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
-								if (this.keyRules[key].exec) await this.keyRules[key].exec(item.value, key, this.name)
-								else if (this.keyRules[key].execAsync) this.keyRules[key].execAsync(item.value, key, this.name)
+								if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item, this.keyRules[key].exec)
+								else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item, this.keyRules[key].execAsync)
 							} else if (this.globalRules.exec || this.globalRules.execAsync) {
-								if (this.globalRules.exec) await this.globalRules.exec(item.value, key)
-								else if (this.globalRules.execAsync) this.globalRules.execAsync(item.value, key, this.name)
+								if (this.globalRules.exec) this.flushItemFromQueue(key, item, this.globalRules.exec)
+								else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item, this.globalRules.execAsync)
 							}
 						}
 
@@ -230,12 +226,36 @@ export class Queue<T = any> {
 
 	/**Push an item to the storage after executin onPush hooks if they exist*/
 	private async pushItemInStorage(key: string, item: QueueItem<T>) {
-		if (this.logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key}`)
+		if (this._logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key}`)
 		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item.value, key, this.name)
 		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item.value, key, this.name)
 		else if (this.globalRules.onPush) await this.globalRules.onPush(item.value, key, this.name)
 		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item.value, key, this.name)
 		this.storage.push(key, item)
+	}
+
+	private async flushItemFromQueue(key: string, item: QueueItem<T>, callback: ExecCallback<T>) {
+		if (this._logger) console.log(new Date(), `#> flushed item - queue: ${this.name} - key: ${key}`)
+
+		const maxRetry = 
+			this.keyRules[key].maxRetry || 
+			this.globalRules.maxRetry || 
+			0
+
+		const onMaxRetryCallback = 
+			this.keyRules[key].onMaxRetry || 
+			this.globalRules.onMaxRetry || 
+			((_, error) => { throw error })
+
+		let retryCount = 0
+		while (retryCount < maxRetry) {
+			try {
+				await callback(item.value, key, this.name)
+			} catch (error) {
+				if (retryCount++ >= maxRetry) 
+					await onMaxRetryCallback(item.value, error)
+			}
+		}
 	}
 
 	/**Set FIFO behaviour (default). If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
@@ -302,7 +322,7 @@ export class Queue<T = any> {
 	/**Set the number of milliseconds that the queue has to wait befor flushing again for a specific key (net of flush execution time)
 	* @param key - provide a key (* refers to all keys)
 	* @param delay - milliseconds*/
-	flushEvery(key: string, delay: number) {
+	setDelay(key: string, delay: number) {
 		this.parseKey(key)
 		this.setRule(key, "every", delay)
 		return this
@@ -360,11 +380,29 @@ export class Queue<T = any> {
 	}
 
 	/**Set a condition for pushed items to be ignored
-	 * @param keys - provide a keys (* refers to all keys)
+	 * @param keys - provide a key (* refers to all keys)
 	 * @param condition - if returns true, the item is ignored*/
 	ignoreItem(key: string, condition: IgnoreItemCondition<T>) {
 		this.parseKey(key)
 		this.setRule(key, "ignoreItemCondition", condition)
+		return this
+	}
+
+	/**Set a maximum retry number if the flush callback throws an error
+	 * @param key - provide a key (* refers to all keys)
+	 * @param max - number of retries*/
+	setMaxRetry(key: string, max: number = 0) {
+		this.parseKey(key)
+		this.setRule(key, "maxRetry", max)
+		return this
+	}
+
+	/**Set a callback for when the maximum retry number has been reached
+	 * @param key - provide a key (* refers to all keys)
+	 * @param callback - max retry callback (throw the last retry error by default)*/
+	onMaxRetry(key: string, callback: OnMaxRetryCallback) {
+		this.parseKey(key)
+		this.setRule(key, "onMaxRetry", callback)
 		return this
 	}
 
@@ -430,6 +468,8 @@ export class Queue<T = any> {
 		return this.paused
 	}
 
+
+
 	/**Tells if a key is ignored by the queue*/
 	isKeyIgnored(key: string): boolean {
 		if (key == ALL_KEYS_CH) throw Error("* refers to all keys and cannot be used here")
@@ -451,6 +491,16 @@ export class Queue<T = any> {
 	/**Set an in Memory storage (default)*/
 	inMemoryStorage() {
 		this.storage = new MemoryStorage(this.name)
+		return this
+	}
+
+	logger(enabled: boolean) {
+		this._logger = enabled
+		return this
+	}
+
+	setFlushRate(rate: number) {
+		this.shiftRate = 1000 / rate
 		return this
 	}
 }

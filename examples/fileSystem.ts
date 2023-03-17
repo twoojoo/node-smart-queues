@@ -7,7 +7,7 @@ const q = SmartQueue<number>("q1")
 	.fileSystemStorage("./file.txt")
 	.setFIFO("k1")
 	.setLIFO("k2")
-	.flushEvery("*", 1000)
+	.setDelay("*", 1000)
 	.onFlushAsync("*", logOutput)
 	.start();
 
@@ -25,7 +25,7 @@ const q1 = SmartQueue<number>("q2")
 	.fileSystemStorage("./file.txt")
 	.setLIFO("k1")
 	.setFIFO("key2")
-	.flushEvery("*", 1000)
+	.setDelay("*", 1000)
 	.onFlushAsync("*", logOutput)
 	.start();;
 

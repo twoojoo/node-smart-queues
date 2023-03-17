@@ -1,10 +1,5 @@
 export type QueueKind = "LIFO" | "FIFO"
 
-export type QueueOptions = {
-	logger?: boolean
-	shiftRate?: number
-}
-
 export type QueueItem<T> = {
 	pushTimestamp: number
 	value: T
@@ -25,7 +20,10 @@ export type Rules<T> = {
 	onPushAsync?: OnPushCallback<T>
 	locked?: boolean
 	ignoreItemCondition?: IgnoreItemCondition<T>
+	maxRetry?: number
+	onMaxRetry?: OnMaxRetryCallback<T>
 }
+
 
 export type PriorityOptions = {
 	ignoreNotPrioritized?: boolean
@@ -33,8 +31,8 @@ export type PriorityOptions = {
 
 export type Key = string 
 
+export type OnMaxRetryCallback<T = any> = (item?: T, err?: Error) => any
 export type ExecCallback<T = any> = (item: T, key?: string, queue?: string) => any
-
 export type CloneCondition<T = any> = (item: T) => boolean
 export type IgnoreItemCondition<T = any> = (item: T) => boolean
 

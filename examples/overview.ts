@@ -1,17 +1,23 @@
 import { QueuePool, SmartQueue } from "../src"
 
 (async function () {
+	/**NOTE: asterisk ("*") is a special character that refers to all keys accross the queue.
+	 * In some queue methods and properties it is allowed, but in some others it's not, because
+	 * that property or method cannot be applied to all keys (e.g: you cant push an item for all keys)*/
 
-	//declare the queue
-	const queue1 = SmartQueue<number>("q1", { logger: true })
+	//declare the queue and its properties
+	const queue1 = SmartQueue<number>("q1")
+		.logger(true) // toggle the logger (default false)
+		.setFlushRate(10) // set how many flushes are allowed per second (default 60)
 		.inMemoryStorage() // set memory as storage (redundant, memory is default)
-		.setLIFO("*") // set LIFO behaviour for all keys
 		.randomizePriority() // overrides priority settings and randomize keys priority
-		.setPriority(["k1", "k2"], { ignoreNotPrioritized: false }) // overrides randomize (id set) set the keys priority
+		.setPriority(["k1", "k2"], { ignoreNotPrioritized: false }) // sets the keys priority (disable randomize)
+		.setLIFO() // set LIFO behaviour for all keys (default FIFO)
+		.setFIFO("k2") // set FIFO behaviour for key k2 only
 		.clonePre("*", 2, (i) => i == 3) // clone items (2 copies) before pushing them to the storage (for all keys) on a certain condition
 		.clonePost("*", 1) // clone items (1 copy - useless) before flushing them from the queue (for all keys)
-		.flushEvery("*", 1000) // set a distance of 1000ms between each flush for all keys
-		.flushEvery("k1", 3000) // set a distance of 3000ms between each flush for key "k1" only (overrides the global "flushEvert" setting)
+		.setDelay("*", 1000) // set a distance of 1000ms between each flush for all keys
+		.setDelay("k1", 3000) // set a distance of 3000ms between each flush for key "k1" only (overrides the global "flushEvert" setting)
 		.flushSize("*", 2) // flush 2 items at one time for every key
 		.ignoreKeys("k1") // ignore items pushed for key k1
 		.onFlush("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (awaited if async)
