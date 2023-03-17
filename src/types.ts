@@ -26,6 +26,10 @@ export type Rules<T> = {
 	locked?: boolean
 }
 
+export type PriorityOptions = {
+	ignoreNotPrioritized?: boolean
+}
+
 export type Key = string 
 
 export type ExecCallback<T = any> = (item: T, key?: string, queue?: string) => any

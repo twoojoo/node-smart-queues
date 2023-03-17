@@ -1,3 +1,3 @@
 export { SmartQueue } from "./Queue"
-export { getQueuesList, queueExists } from "./pool"
-export { ExecCallback, CloneCondition } from "./types"
+export { QueuePool } from "./pool"
+export { ExecCallback, CloneCondition, PriorityOptions } from "./types"

@@ -18,12 +18,35 @@ export function registerNewStorage<T>(storage: Storage<T>) {
 	storagePool.push(storage)
 }
 
+export const QueuePool = {
+	getQueuesList,
+	queueExists,
+	isQueueLooping,
+	isQueuePaused,
+	isQueueKeyIgnored
+}
+
 /**Retrieve the list of quque names from the queues pool.*/
-export function getQueuesList(): string[] {
+function getQueuesList(): string[] {
 	return queuePool.map(q => q.getName())
 }
 
-/**Tells if a queue exists in the queues pool.*/
-export function queueExists(name: string): boolean {
+/**Tells if a specific queue exists in the queues pool.*/
+function queueExists(name: string): boolean {
 	return !!queuePool.find(q => q.getName() == name)
+}
+
+/**Tells if a specific queue is paused*/
+function isQueuePaused(name: string): boolean {
+	return queuePool.find(q => q.getName() == name)?.isPaused()
+}
+
+/**Tells if a specific queue is looping*/
+function isQueueLooping(name: string): boolean {
+	return queuePool.find(q => q.getName() == name)?.isLooping()
+}
+
+/**Tells if a key is ignored by a specific queue*/
+function isQueueKeyIgnored(name: string, key: string): boolean {
+	return queuePool.find(q => q.getName() == name)?.isKeyIgnored(key)
 }

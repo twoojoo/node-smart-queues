@@ -1,4 +1,4 @@
-import { ExecCallback, getQueuesList, queueExists, SmartQueue } from "../src"
+import { ExecCallback, SmartQueue } from "../src"
 
 const logOutput: ExecCallback<number> = 
 	async (i, k, q) => { console.log(q, k, i, `${Date.now()}`) }
@@ -38,10 +38,3 @@ const q1 = SmartQueue<number>("q2")
 	await q1.push("k2", 5)
 	await q1.push("k2", 6)
 })()
-
-console.log(getQueuesList()) // ["q1","q2"]
-console.log(queueExists("q1")) //true
-console.log(queueExists("q2")) //true
-console.log(queueExists("q3")) //false
-
-

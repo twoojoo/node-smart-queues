@@ -1,5 +1,5 @@
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
-import { CloneCondition, ExecCallback, OnPushCallback, QueueItem, QueueKind, QueueOptions, Rules } from "./types"
+import { CloneCondition, ExecCallback, OnPushCallback, PriorityOptions, QueueItem, QueueKind, QueueOptions, Rules } from "./types"
 import { Storage } from "./storage/Storage"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
@@ -23,7 +23,8 @@ export class Queue<T = any> {
 	private shiftEnabled = false
 
 	private priorities: string[] = []
-	private ignoreUnknownKeys: boolean = false
+	private ignoreNotPrioritized: boolean = false
+	private keysToIgnore: string[] = []
 
 	private globalRules: Rules<T> = {}
 	private keyRules: { [key: string]: Rules<T> } = {}
@@ -56,11 +57,15 @@ export class Queue<T = any> {
 		if (this.logger) console.log(new Date(), `#> pausing queue`, this.name, timer ? `for ${timer}ms` : "indefinitely")
 
 		this.paused = true
+		this.looping = false
 		if (timer || timer == 0) setTimeout(() => this.start(), timer)
-			
+
 		return this
 	}
 
+	/**Set a callback to be executed syncronously (awaited if async) when pushing items for a specific key
+	* @param key - provide a key (* refers to all keys)
+	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
 	onPush(key: string, callback: OnPushCallback<T>) {
 		this.parseKey(key)
 		this.setRule(key, "onPushAsync", undefined)
@@ -68,6 +73,9 @@ export class Queue<T = any> {
 		return this
 	}
 
+	/**Set a callback to be executed asyncronously (not awaited if async) when pushing items for a specific key
+	* @param key - provide a key (* refers to all keys)
+	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
 	onPushAsync(key: string, callback: OnPushCallback<T>) {
 		this.parseKey(key)
 		this.setRule(key, "onPush", undefined)
@@ -76,10 +84,11 @@ export class Queue<T = any> {
 	}
 
 	private orderKeysByPriority(): string[] {
+		// if (this.ignoreNotPrioritized) return this.priorities
+
 		const currentKeys = Object.keys(this.keyRules)
 		const notPrioritized = currentKeys.filter(key => !this.priorities.includes(key))
 
-		if (this.ignoreUnknownKeys) return this.priorities
 		return this.priorities.concat(notPrioritized)
 	}
 
@@ -160,8 +169,9 @@ export class Queue<T = any> {
 	 * @param item - item to be pushed in the queue*/
 	async push(key: string, item: T) {
 		if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
+		if (this.keysToIgnore.includes(key)) return
 
-		if (this.ignoreUnknownKeys) 
+		if (this.ignoreNotPrioritized) 
 			if (!this.priorities.includes(key))
 				return
 
@@ -172,14 +182,18 @@ export class Queue<T = any> {
 			value: item
 		}
 
-		if (this.getRule(key, "clonePre")) {
+		const cloneNum = this.keyRules[key].clonePre || this.globalRules.clonePre
+
+		if (!!cloneNum) {
 			let toBeCloned = true
 
-			if (this.getRule(key, "clonePreCondition")) 
-				toBeCloned = this.getRule(key, "clonePreCondition")()
+			const cloneCondition = this.keyRules[key].clonePreCondition || this.globalRules.clonePreCondition
+
+			if (cloneCondition) 
+				toBeCloned = cloneCondition(item)
 
 			if (toBeCloned) {
-				for (let i = 0; i < this.getRule(key, "clonePre"); i++) {
+				for (let i = 0; i < cloneNum; i++) {
 					await this.pushItemInStorage(key, queueItem)
 				}
 			} else await this.pushItemInStorage(key, queueItem)
@@ -217,15 +231,15 @@ export class Queue<T = any> {
 	/**Set keys priority (fist keys in the array have higher priority)
 	* @param key - provide a key (* refers to all keys)
 	* @param ignoreUnknownKeys - ignore all pushed items whose key is not included in the provided priority array*/
-	priority(keys: string[], ignoreUnknownKeys: boolean = false) {
-		this.ignoreUnknownKeys = ignoreUnknownKeys
+	setPriority(keys: string[], options: PriorityOptions = {}) {
+		this.ignoreNotPrioritized = !!options.ignoreNotPrioritized
 		this.priorities = keys
 		return this
 	} 
 
 	/**Set a callback to be executed syncronously (awaited if async) when flushing items for a specific key
 	* @param key - provide a key (* refers to all keys)
-	* @param callback - (item, key?) => { ..some action.. } [can be async]*/
+	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
 	onFlush(key: string, callback: ExecCallback<T>) {
 		this.parseKey(key)
 		this.setRule(key, "execAsync", undefined)
@@ -235,7 +249,7 @@ export class Queue<T = any> {
 
 	/**Set a callback to be executed asyncronously (not awaited if async) when flushing items for a specific key
 	* @param key - provide a key (* refers to all keys)
-	* @param callback - (item, key?) => { ..some action.. } [can be async]*/
+	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
 	onFlushAsync(key: string, callback: ExecCallback<T>) {
 		this.parseKey(key)
 		this.setRule(key, "exec", undefined)
@@ -278,6 +292,37 @@ export class Queue<T = any> {
 		this.parseKey(key)
 		this.setRule(key, "clonePost", count)
 		this.setRule(key, "clonePostCondition", condition)
+		return this
+	}
+
+	/**Ignores items pushed for the provided keys (dosen't override previously ignored key)
+	 * @param keys - provide a list of keys (key * is forbidden)*/
+	ignoreKeys(keys: string[] | string) {
+		if (Array.isArray(keys)) {
+			if (keys.includes(ALL_KEYS_CH)) 
+				throw Error("cannot ignore all keys (*) - use pause() instead")	
+
+			this.keysToIgnore = Array.from(new Set(this.keysToIgnore.concat(keys)))
+		} else {
+			if (keys == ALL_KEYS_CH) 
+				throw Error("cannot ignore all keys (*) - use pause() instead")	
+
+			this.keysToIgnore = Array.from(new Set(this.keysToIgnore.concat([keys])))
+		}
+		return this
+	} 
+
+	/**Ignores items pushed for the provided keys (doen't override previously ignored key)
+	* @param keys - provide a list of keys (* restores all keys)*/
+	restoreKeys(keys: string[] | string) {
+		if (Array.isArray(keys)) {
+			if (keys.includes(ALL_KEYS_CH)) this.keysToIgnore = []
+			else this.keysToIgnore = this.keysToIgnore.filter(k => !keys.includes(k))
+		} else {
+			if (keys == ALL_KEYS_CH) this.keysToIgnore = []
+			else this.keysToIgnore = this.keysToIgnore.filter(k => keys == k)
+		}
+
 		return this
 	}
 
@@ -338,7 +383,21 @@ export class Queue<T = any> {
 		})
 	}
 
-	// STORAGE SYSTEMS
+	/**Tells if the queue is paused*/
+	isPaused(): boolean {
+		return this.paused
+	}
+
+	/**Tells if a key is ignored by the queue*/
+	isKeyIgnored(key: string): boolean {
+		if (key == ALL_KEYS_CH) throw Error("* refers to all keys and cannot be used here")
+		return !!this.keysToIgnore.includes(key)
+	}
+
+	/**Tells if the queue is looping*/
+	isLooping(): boolean {
+		return this.looping
+	}
 
 	/**Set a FS storage
 	 * @param file - provide the path to the storage file (can be the same accross different queues)*/
@@ -351,9 +410,5 @@ export class Queue<T = any> {
 	inMemoryStorage() {
 		this.storage = new MemoryStorage(this.name)
 		return this
-	}
-
-	getPushedCount() {
-
 	}
 }
