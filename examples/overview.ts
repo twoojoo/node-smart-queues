@@ -7,13 +7,15 @@ import { QueuePool, SmartQueue } from "../src"
 
 	//declare the queue and its properties
 	const queue1 = SmartQueue<number>("q1")
-		.logger(true) // toggle the logger (default false)
-		.setFlushRate(10) // set how many flushes are allowed per second (default 60)
+		.logger(true) // toggle the logger (default: false)
+		.setFlushRate(10) // set how many flushes are allowed per second (default: 60)
 		.inMemoryStorage() // set memory as storage (redundant, memory is default)
 		.randomizePriority() // overrides priority settings and randomize keys priority
 		.setPriority(["k1", "k2"], { ignoreNotPrioritized: false }) // sets the keys priority (disable randomize)
 		.setLIFO() // set LIFO behaviour for all keys (default FIFO)
 		.setFIFO("k2") // set FIFO behaviour for key k2 only
+		.setMaxRetry("*", 3) // set a maximum of 3 retries for when a onFlush callback throws an error (default: 0)
+		.onMaxRetry("*", (i, err) => console.error(err)) // set a callback for when the max number of retries is reached (default: throw the last retry error)
 		.clonePre("*", 2, (i) => i == 3) // clone items (2 copies) before pushing them to the storage (for all keys) on a certain condition
 		.clonePost("*", 1) // clone items (1 copy - useless) before flushing them from the queue (for all keys)
 		.setDelay("*", 1000) // set a distance of 1000ms between each flush for all keys

@@ -242,10 +242,22 @@ export class Queue<T = any> {
 			this.globalRules.maxRetry || 
 			0
 
-		const onMaxRetryCallback = 
-			this.keyRules[key].onMaxRetry || 
-			this.globalRules.onMaxRetry || 
-			((_, error) => { throw error })
+		let onMaxRetryCallback: OnMaxRetryCallback<T>
+		let isMaxRetryCallbackAsync: boolean = false
+
+		if (this.keyRules[key].onMaxRetry) {
+			onMaxRetryCallback = this.keyRules[key].onMaxRetry
+			isMaxRetryCallbackAsync = true
+		} else if (this.keyRules[key].onMaxRetryAsync) {
+			onMaxRetryCallback = this.keyRules[key].onMaxRetryAsync
+			isMaxRetryCallbackAsync = false
+		} else if (this.globalRules.onMaxRetry) {
+			onMaxRetryCallback = this.globalRules.onMaxRetry
+			isMaxRetryCallbackAsync = true
+		} else if (this.globalRules.onMaxRetryAsync) {
+			onMaxRetryCallback = this.globalRules.onMaxRetryAsync
+			isMaxRetryCallbackAsync = false
+		} else onMaxRetryCallback = ((_, error) => { throw error })
 
 		let retryCount = 0
 		while (retryCount < maxRetry) {
@@ -253,7 +265,8 @@ export class Queue<T = any> {
 				await callback(item.value, key, this.name)
 			} catch (error) {
 				if (retryCount++ >= maxRetry) 
-					await onMaxRetryCallback(item.value, error)
+					if (isMaxRetryCallbackAsync) onMaxRetryCallback(item.value, error)
+					else await onMaxRetryCallback(item.value, error)
 			}
 		}
 	}
@@ -402,7 +415,18 @@ export class Queue<T = any> {
 	 * @param callback - max retry callback (throw the last retry error by default)*/
 	onMaxRetry(key: string, callback: OnMaxRetryCallback) {
 		this.parseKey(key)
+		this.setRule(key, "onMaxRetryAsync", undefined)
 		this.setRule(key, "onMaxRetry", callback)
+		return this
+	}
+
+	/**Set a callback for when the maximum retry number has been reached
+	 * @param key - provide a key (* refers to all keys)
+	 * @param callback - max retry callback (throw the last retry error by default)*/
+	onMaxRetryAsync(key: string, callback: OnMaxRetryCallback) {
+		this.parseKey(key)
+		this.setRule(key, "onMaxRetry", undefined)
+		this.setRule(key, "onMaxRetryAsync", callback)
 		return this
 	}
 

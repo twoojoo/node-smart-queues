@@ -22,6 +22,7 @@ export type Rules<T> = {
 	ignoreItemCondition?: IgnoreItemCondition<T>
 	maxRetry?: number
 	onMaxRetry?: OnMaxRetryCallback<T>
+	onMaxRetryAsync?: OnMaxRetryCallback<T>
 }
 
 
