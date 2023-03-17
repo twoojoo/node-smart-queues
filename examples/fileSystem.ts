@@ -8,7 +8,8 @@ const q = SmartQueue<number>("q1")
 	.fifo("k1")
 	.lifo("k2")
 	.every("*", 1000)
-	.execAsync("*", logOutput);
+	.onFlushAsync("*", logOutput)
+	.start();
 
 (async function () {
 	await q.push("k1", 1)
@@ -25,7 +26,8 @@ const q1 = SmartQueue<number>("q2")
 	.lifo("k1")
 	.fifo("key2")
 	.every("*", 1000)
-	.execAsync("*", logOutput);
+	.onFlushAsync("*", logOutput)
+	.start();;
 
 (async function () {
 	await q1.push("k1", 1)

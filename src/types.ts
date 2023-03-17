@@ -1,11 +1,16 @@
 export type QueueKind = "LIFO" | "FIFO"
 
+export type QueueOptions = {
+	logger?: boolean
+	shiftRate?: number
+}
+
 export type QueueItem<T> = {
 	pushTimestamp: number
 	value: T
 }
 
-export type Properties<T> = {
+export type Rules<T> = {
 	kind?: QueueKind //default fifo
 	shiftSize?: number
 	every?: number,
@@ -16,6 +21,8 @@ export type Properties<T> = {
 	clonePostCondition?: CloneCondition<T>,
 	exec?: ExecCallback<T>,
 	execAsync?: ExecCallback<T>,
+	onPush?: OnPushCallback<T>
+	onPushAsync?: OnPushCallback<T>
 	locked?: boolean
 }
 
@@ -31,3 +38,5 @@ export type StorageShiftOutput<T> = {
 	storedCount: StoredCount
 	items: QueueItem<T>[]
 }
+
+export type OnPushCallback<T = any> = (item: T, key?: string, queue?: string) => any

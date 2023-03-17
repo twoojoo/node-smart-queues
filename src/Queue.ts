@@ -1,5 +1,5 @@
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
-import { CloneCondition, ExecCallback, QueueItem, QueueKind, Rules } from "./types"
+import { CloneCondition, ExecCallback, OnPushCallback, QueueItem, QueueKind, QueueOptions, Rules } from "./types"
 import { Storage } from "./storage/Storage"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
@@ -8,15 +8,19 @@ import { registerNewQueue } from "./pool"
 /**Init a Queue (FIFO by default, in Memory by default)
  * @param name - provide a unique name for the queue
  * @param shiftRate - provide the number of shifts per second (default: 60) */
-export function SmartQueue<T = any>(name: string, shiftRate: number = DEFAULT_SHIFT_RATE) {
-	return new Queue<T>(name, shiftRate)
+export function SmartQueue<T = any>(name: string, options: QueueOptions = {}) {
+	return new Queue<T>(name, options)
 }
 
 export class Queue<T = any> {
 	private storage: Storage<T>
+	private logger: boolean = true
 	private name: string
-	private shiftEnabled = false
 	private shiftRate: number
+
+	private looping: boolean = false
+	private paused: boolean = false
+	private shiftEnabled = false
 
 	private priorities: string[] = []
 	private ignoreUnknownKeys: boolean = false
@@ -24,16 +28,51 @@ export class Queue<T = any> {
 	private globalRules: Rules<T> = {}
 	private keyRules: { [key: string]: Rules<T> } = {}
 
-	constructor(name: string, shiftRate: number = DEFAULT_SHIFT_RATE) {
+	constructor(name: string, options: QueueOptions = {}) {
+		if (options.logger === false) this.logger = false
 		this.name = name
 		this.storage = new MemoryStorage(name)	
-		this.shiftRate = 1000 / shiftRate
+		this.shiftRate = 1000 / (options.shiftRate || DEFAULT_SHIFT_RATE)
 		registerNewQueue(this)
-		this.startShiftLoop()
 	}
 
 	getName() {
 		return this.name
+	}
+
+	/**Starts the queue*/
+	start() {
+		if (this.logger) console.log(new Date(), `#> starting queue`, this.name)
+
+		this.paused = false
+		if (!this.looping) this.startShiftLoop()
+
+		return this
+	}
+
+	/** Pause the queue (pause indefinitely if timer is not provided)
+	 * @param timer - set a timer for the queue restart (calls start() after the timer has expiret)*/
+	pause(timer?: number) {
+		if (this.logger) console.log(new Date(), `#> pausing queue`, this.name, timer ? `for ${timer}ms` : "indefinitely")
+
+		this.paused = true
+		if (timer || timer == 0) setTimeout(() => this.start(), timer)
+			
+		return this
+	}
+
+	onPush(key: string, callback: OnPushCallback<T>) {
+		this.parseKey(key)
+		this.setRule(key, "onPushAsync", undefined)
+		this.setRule(key, "onPush", callback)
+		return this
+	}
+
+	onPushAsync(key: string, callback: OnPushCallback<T>) {
+		this.parseKey(key)
+		this.setRule(key, "onPush", undefined)
+		this.setRule(key, "onPushAsync", callback)
+		return this
 	}
 
 	private orderKeysByPriority(): string[] {
@@ -45,7 +84,9 @@ export class Queue<T = any> {
 	}
 
 	private async startShiftLoop() {
+		this.looping = true
 		while (true) {
+			if (this.paused) break
 			const start = Date.now()
 			const oderedKeys = this.orderKeysByPriority()
 			if (this.shiftEnabled) {
@@ -78,6 +119,7 @@ export class Queue<T = any> {
 
 					if (output.items.length != 0) {
 						for (let item of this.parseItemsPost(key, output.items)) {
+							if (this.logger) console.log(new Date(), `#> flushed item - queue: ${this.name} - key: ${key}`)
 							if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
 								if (this.keyRules[key].exec) await this.keyRules[key].exec(item.value, key, this.name)
 								else if (this.keyRules[key].execAsync) this.keyRules[key].execAsync(item.value, key, this.name)
@@ -99,6 +141,8 @@ export class Queue<T = any> {
 				}
 			} else await new Promise(r => setTimeout(() => r(0), this.shiftRate || DEFAULT_SHIFT_RATE))
 		}
+
+		this.looping = false
 	}
 
 	private lockKey(key: string) {
@@ -126,7 +170,7 @@ export class Queue<T = any> {
 		const queueItem: QueueItem<T> = {
 			pushTimestamp: Date.now(),
 			value: item
-		} 
+		}
 
 		if (this.getRule(key, "clonePre")) {
 			let toBeCloned = true
@@ -136,12 +180,22 @@ export class Queue<T = any> {
 
 			if (toBeCloned) {
 				for (let i = 0; i < this.getRule(key, "clonePre"); i++) {
-					await this.storage.push(key, queueItem)
+					await this.pushItemInStorage(key, queueItem)
 				}
-			} else await this.storage.push(key, queueItem)
-		} else await this.storage.push(key, queueItem)
+			} else await this.pushItemInStorage(key, queueItem)
+		} else await this.pushItemInStorage(key, queueItem)
 
 		this.shiftEnabled = true
+	}
+
+	/**Push an item to the storage after executin onPush hooks if they exist*/
+	private async pushItemInStorage(key: string, item: QueueItem<T>) {
+		if (this.logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key}`)
+		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item.value, key, this.name)
+		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item.value, key, this.name)
+		else if (this.globalRules.onPush) await this.globalRules.onPush(item.value, key, this.name)
+		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item.value, key, this.name)
+		this.storage.push(key, item)
 	}
 
 	/**Set FIFO behaviour (default). If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
@@ -172,7 +226,7 @@ export class Queue<T = any> {
 	/**Set a callback to be executed syncronously (awaited if async) when flushing items for a specific key
 	* @param key - provide a key (* refers to all keys)
 	* @param callback - (item, key?) => { ..some action.. } [can be async]*/
-	exec(key: string, callback: ExecCallback<T>) {
+	onFlush(key: string, callback: ExecCallback<T>) {
 		this.parseKey(key)
 		this.setRule(key, "execAsync", undefined)
 		this.setRule(key, "exec", callback)
@@ -182,7 +236,7 @@ export class Queue<T = any> {
 	/**Set a callback to be executed asyncronously (not awaited if async) when flushing items for a specific key
 	* @param key - provide a key (* refers to all keys)
 	* @param callback - (item, key?) => { ..some action.. } [can be async]*/
-	execAsync(key: string, callback: ExecCallback<T>) {
+	onFlushAsync(key: string, callback: ExecCallback<T>) {
 		this.parseKey(key)
 		this.setRule(key, "exec", undefined)
 		this.setRule(key, "execAsync", callback)
@@ -297,5 +351,9 @@ export class Queue<T = any> {
 	inMemoryStorage() {
 		this.storage = new MemoryStorage(this.name)
 		return this
+	}
+
+	getPushedCount() {
+
 	}
 }
