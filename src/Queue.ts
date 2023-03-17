@@ -12,7 +12,7 @@ export function SmartQueue<T = any>(name: string, shiftRate: number = DEFAULT_SH
 	return new Queue<T>(name, shiftRate)
 }
 
-class Queue<T = any> {
+export class Queue<T = any> {
 	private storage: Storage<T>
 	private name: string
 	private shiftEnabled = false
@@ -25,11 +25,15 @@ class Queue<T = any> {
 	private keyRules: { [key: string]: Rules<T> } = {}
 
 	constructor(name: string, shiftRate: number = DEFAULT_SHIFT_RATE) {
-		registerNewQueue(name)
 		this.name = name
 		this.storage = new MemoryStorage(name)	
 		this.shiftRate = 1000 / shiftRate
+		registerNewQueue(this)
 		this.startShiftLoop()
+	}
+
+	getName() {
+		return this.name
 	}
 
 	private orderKeysByPriority(): string[] {
@@ -75,11 +79,11 @@ class Queue<T = any> {
 					if (output.items.length != 0) {
 						for (let item of this.parseItemsPost(key, output.items)) {
 							if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
-								if (this.keyRules[key].exec) await this.keyRules[key].exec(item.value, key)
-								else if (this.keyRules[key].execAsync) this.keyRules[key].execAsync(item.value, key)
+								if (this.keyRules[key].exec) await this.keyRules[key].exec(item.value, key, this.name)
+								else if (this.keyRules[key].execAsync) this.keyRules[key].execAsync(item.value, key, this.name)
 							} else if (this.globalRules.exec || this.globalRules.execAsync) {
 								if (this.globalRules.exec) await this.globalRules.exec(item.value, key)
-								else if (this.globalRules.execAsync) this.globalRules.execAsync(item.value, key)
+								else if (this.globalRules.execAsync) this.globalRules.execAsync(item.value, key, this.name)
 							}
 						}
 

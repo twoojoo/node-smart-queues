@@ -1,8 +1,9 @@
-import { QueueItem, QueueKind, StorageShiftOutput, StoredCount } from "../types"
+import { QueueItem, QueueKind, StorageShiftOutput } from "../types"
+import { registerNewStorage } from "../pool"
 import { Storage } from "./Storage"
 import fs from "fs"
 
-const SEPARATOR = "§ç§ç§ç§ç§ç§ç§ç§ç"
+const SEPARATOR = "§çn§çq§çs§çsep§ç"
 const LINE_END = SEPARATOR + "\n"
 
 export class FileSystemStorage<T = any> extends Storage<T> {
@@ -13,6 +14,7 @@ export class FileSystemStorage<T = any> extends Storage<T> {
 		this.file = file
 		const fileExists = fs.existsSync(file)
 		if (!fileExists) fs.writeFileSync(file, "")
+		registerNewStorage(this)
 	}
 
 	async push(key: string, item: QueueItem<T>): Promise<void> {

@@ -8,6 +8,10 @@ export abstract class Storage<T> {
 		this.name = name
 	}
 
+	getName() {
+		return this.name
+	}
+
 	abstract push(key: string, item: QueueItem<T>): Promise<void>
 	abstract shiftFIFO(key: string, count: number): Promise<StorageShiftOutput<T>>
 	abstract shiftLIFO(key: string, count: number): Promise<StorageShiftOutput<T>>

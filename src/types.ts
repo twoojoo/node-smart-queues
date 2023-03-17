@@ -5,7 +5,7 @@ export type QueueItem<T> = {
 	value: T
 }
 
-export type Rules<T> = {
+export type Properties<T> = {
 	kind?: QueueKind //default fifo
 	shiftSize?: number
 	every?: number,
@@ -21,9 +21,9 @@ export type Rules<T> = {
 
 export type Key = string 
 
-export type ExecCallback<T> = (item: T, key: string) => any
+export type ExecCallback<T = any> = (item: T, key?: string, queue?: string) => any
 
-export type CloneCondition<T> = (item: T) => boolean
+export type CloneCondition<T = any> = (item: T) => boolean
 
 export type StoredCount = { [key: string]: number }
 

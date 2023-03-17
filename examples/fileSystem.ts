@@ -1,35 +1,45 @@
-import { SmartQueue } from "../src"
+import { ExecCallback, getQueuesList, queueExists, SmartQueue } from "../src"
 
-const q = SmartQueue<number>("my-queue")
+const logOutput: ExecCallback<number> = 
+	async (i, k, q) => {console.log(q, k, i, `${Date.now()}`)}
+
+const q = SmartQueue<number>("q1")
 	.fileSystemStorage("./file.txt")
-	.fifo("key1")
-	.lifo("key2")
+	.fifo("k1")
+	.lifo("k2")
 	.every("*", 1000)
-	.execAsync("*", async (item, key) => console.log(item, key, Date.now()));
+	.execAsync("*", logOutput);
 
 (async function () {
-	await q.push("key1", 1)
-	await q.push("key1", 2)
-	await q.push("key1", 3)
-	await q.push("key1", 4)
-	await q.push("key1", 5)
-	await q.push("key2", 5)
-	await q.push("key2", 6)
+	await q.push("k1", 1)
+	await q.push("k1", 2)
+	await q.push("k1", 3)
+	await q.push("k1", 4)
+	await q.push("k1", 5)
+	await q.push("k2", 5)
+	await q.push("k2", 6)
 })()
 
-const q1 = SmartQueue<number>("my-queue1")
+const q1 = SmartQueue<number>("q2")
 	.fileSystemStorage("./file.txt")
-	.fifo("key1")
-	.lifo("key2")
+	.lifo("k1")
+	.fifo("key2")
 	.every("*", 1000)
-	.execAsync("*", async (item, key) => console.log(item, key, Date.now()));
+	.execAsync("*", logOutput);
 
 (async function () {
-	await q1.push("key1", 1)
-	await q1.push("key1", 2)
-	await q1.push("key1", 3)
-	await q1.push("key1", 4)
-	await q1.push("key1", 5)
-	await q1.push("key2", 5)
-	await q1.push("key2", 6)
+	await q1.push("k1", 1)
+	await q1.push("k1", 2)
+	await q1.push("k1", 3)
+	await q1.push("k1", 4)
+	await q1.push("k1", 5)
+	await q1.push("k2", 5)
+	await q1.push("k2", 6)
 })()
+
+console.log(getQueuesList()) // ["q1","q2"]
+console.log(queueExists("q1")) //true
+console.log(queueExists("q2")) //true
+console.log(queueExists("q3")) //false
+
+

@@ -1,3 +1,4 @@
+import { registerNewStorage } from "../pool"
 import { QueueItem, QueueKind, StorageShiftOutput, StoredCount } from "../types"
 import { Storage } from "./Storage"
 
@@ -6,6 +7,7 @@ export class MemoryStorage<T = any> extends Storage<T> {
 
 	constructor(name: string) {
 		super(name)
+		registerNewStorage(this)
 	}
 
 	async push(key: string, item: QueueItem<T>): Promise<void> {
