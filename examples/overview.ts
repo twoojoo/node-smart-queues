@@ -5,17 +5,18 @@ import { QueuePool, SmartQueue } from "../src"
 	//declare the queue
 	const queue1 = SmartQueue<number>("q1", { logger: true })
 		.inMemoryStorage() // set memory as storage (redundant, memory is default)
-		.lifo("*") // set LIFO behaviour for all keys
-		.setPriority(["k1", "k2"], { ignoreNotPrioritized: false }) // set the key priority + ignore not priotirized keys (default to false)
+		.setLIFO("*") // set LIFO behaviour for all keys
+		.randomizePriority() // overrides priority settings and randomize keys priority
+		.setPriority(["k1", "k2"], { ignoreNotPrioritized: false }) // overrides randomize (id set) set the keys priority
 		.clonePre("*", 2, (i) => i == 3) // clone items (2 copies) before pushing them to the storage (for all keys) on a certain condition
 		.clonePost("*", 1) // clone items (1 copy - useless) before flushing them from the queue (for all keys)
-		.every("*", 1000) // set a distance of 1000ms between each flush for all keys
-		.every("k1", 3000) // set a distance of 3000ms between each flush for key "k1" only (overrides the global "every" setting)
+		.flushEvery("*", 1000) // set a distance of 1000ms between each flush for all keys
+		.flushEvery("k1", 3000) // set a distance of 3000ms between each flush for key "k1" only (overrides the global "flushEvert" setting)
 		.flushSize("*", 2) // flush 2 items at one time for every key
 		.ignoreKeys("k1") // ignore items pushed for key k1
-		.onFlush("*", async (i, k, q) => console.log(new Date(), `#> value:`, i)) // executed for every item flushed (awaited if async)
-		.onFlushAsync("*", async (i, k, q) => console.log(new Date(), `#> value:`, i)) // executed for every item flushed (not awaited, overrides previous onFlush callbacks)
-		.onFlushAsync("k2", async (i, k, q) => console.log(new Date(), `#> value (${k}):`, i)) // executed only for k2 items (overrides global onPush for k2 items)
+		.onFlush("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (awaited if async)
+		.onFlushAsync("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (not awaited, overrides previous onFlush callbacks)
+		.onFlushAsync("k2", async (i, k, q) => console.log(new Date(), `#> flushed value (${k}):`, i)) // executed only for k2 items (overrides global onPush for k2 items)
 
 	//print names of the queues in the queue pool
 	console.log(new Date(), `#> queue list:`, QueuePool.getQueuesList()) 

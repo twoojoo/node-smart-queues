@@ -5,9 +5,9 @@ const logOutput: ExecCallback<number> =
 
 const q = SmartQueue<number>("q1")
 	.fileSystemStorage("./file.txt")
-	.fifo("k1")
-	.lifo("k2")
-	.every("*", 1000)
+	.setFIFO("k1")
+	.setLIFO("k2")
+	.flushEvery("*", 1000)
 	.onFlushAsync("*", logOutput)
 	.start();
 
@@ -23,9 +23,9 @@ const q = SmartQueue<number>("q1")
 
 const q1 = SmartQueue<number>("q2")
 	.fileSystemStorage("./file.txt")
-	.lifo("k1")
-	.fifo("key2")
-	.every("*", 1000)
+	.setLIFO("k1")
+	.setFIFO("key2")
+	.flushEvery("*", 1000)
 	.onFlushAsync("*", logOutput)
 	.start();;
 

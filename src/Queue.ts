@@ -1,9 +1,10 @@
+import { CloneCondition, ExecCallback, IgnoreItemCondition, OnPushCallback, PriorityOptions, QueueItem, QueueKind, QueueOptions, Rules } from "./types"
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
-import { CloneCondition, ExecCallback, OnPushCallback, PriorityOptions, QueueItem, QueueKind, QueueOptions, Rules } from "./types"
-import { Storage } from "./storage/Storage"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
+import { Storage } from "./storage/Storage"
 import { registerNewQueue } from "./pool"
+import { shuffleArray } from "./utils"
 
 /**Init a Queue (FIFO by default, in Memory by default)
  * @param name - provide a unique name for the queue
@@ -23,6 +24,7 @@ export class Queue<T = any> {
 	private shiftEnabled = false
 
 	private priorities: string[] = []
+	private randomized: boolean = false
 	private ignoreNotPrioritized: boolean = false
 	private keysToIgnore: string[] = []
 
@@ -83,10 +85,12 @@ export class Queue<T = any> {
 		return this
 	}
 
-	private orderKeysByPriority(): string[] {
-		// if (this.ignoreNotPrioritized) return this.priorities
-
+	private calculatePriority(): string[] {
 		const currentKeys = Object.keys(this.keyRules)
+
+		if (this.randomizePriority) 
+			return shuffleArray(currentKeys)
+		
 		const notPrioritized = currentKeys.filter(key => !this.priorities.includes(key))
 
 		return this.priorities.concat(notPrioritized)
@@ -97,7 +101,7 @@ export class Queue<T = any> {
 		while (true) {
 			if (this.paused) break
 			const start = Date.now()
-			const oderedKeys = this.orderKeysByPriority()
+			const oderedKeys = this.calculatePriority()
 			if (this.shiftEnabled) {
 				for (let key of oderedKeys) {
 					const keyRules = this.keyRules[key] || {}
@@ -166,40 +170,62 @@ export class Queue<T = any> {
 
 	/**Push an item in the queue for a certain key
 	 * @param key - provide a key (* refers to all keys and will throw an error when used as a key)
-	 * @param item - item to be pushed in the queue*/
-	async push(key: string, item: T) {
+	 * @param item - item to be pushed in the queue
+	 * @returns true if the item wasn't ignored by the queue
+	 * */
+	async push(key: string, item: T): Promise<boolean> {
 		if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
-		if (this.keysToIgnore.includes(key)) return
 
+		//check if the key is to be ignored
+		if (this.keysToIgnore.includes(key)) 
+			return false
+
+		//check if the key is not prioritized and should be skipped
 		if (this.ignoreNotPrioritized) 
 			if (!this.priorities.includes(key))
-				return
+				return false
 
 		this.parseKey(key)
+
+		//check if there is a condition for the item to 
+		//be ignored and calculate the condition result
+		const ignoreItemCondition = 
+			this.keyRules[key].ignoreItemCondition || 
+			this.globalRules.ignoreItemCondition
+
+		if (ignoreItemCondition)
+			if (ignoreItemCondition(item))
+				return false
 
 		const queueItem: QueueItem<T> = {
 			pushTimestamp: Date.now(),
 			value: item
 		}
 
-		const cloneNum = this.keyRules[key].clonePre || this.globalRules.clonePre
+		const cloneNum = 
+			this.keyRules[key].clonePre ||
+			this.globalRules.clonePre
 
-		if (!!cloneNum) {
+		if (cloneNum) {
 			let toBeCloned = true
 
-			const cloneCondition = this.keyRules[key].clonePreCondition || this.globalRules.clonePreCondition
+			const cloneCondition = 
+				this.keyRules[key].clonePreCondition || 
+				this.globalRules.clonePreCondition
 
 			if (cloneCondition) 
 				toBeCloned = cloneCondition(item)
 
 			if (toBeCloned) {
-				for (let i = 0; i < cloneNum; i++) {
+				for (let i = 0; i < cloneNum; i++) 
 					await this.pushItemInStorage(key, queueItem)
-				}
 			} else await this.pushItemInStorage(key, queueItem)
+
 		} else await this.pushItemInStorage(key, queueItem)
 
 		this.shiftEnabled = true
+
+		return true
 	}
 
 	/**Push an item to the storage after executin onPush hooks if they exist*/
@@ -214,7 +240,7 @@ export class Queue<T = any> {
 
 	/**Set FIFO behaviour (default). If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
 	 * @param key - provide a key (* refers to all keys)*/
-	fifo(key: string = "*") {
+	setFIFO(key: string = "*") {
 		this.parseKey(key)
 		this.setRule(key, "kind", "FIFO")
 		return this
@@ -222,20 +248,27 @@ export class Queue<T = any> {
 
 	/**Set LIFO behaviour. If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
 	 * @param key - provide a key (* refers to all keys)*/
-	lifo(key: string = "*") {
+	setLIFO(key: string = "*") {
 		this.parseKey(key)
 		this.setRule(key, "kind", "LIFO")
 		return this
 	}
 
 	/**Set keys priority (fist keys in the array have higher priority)
-	* @param key - provide a key (* refers to all keys)
-	* @param ignoreUnknownKeys - ignore all pushed items whose key is not included in the provided priority array*/
+	* @param key - provide a key (* is forbidden here)
+	* @param options.ignoreUnknownKeys - ignore all pushed items whose key is not included in the provided priority array*/
 	setPriority(keys: string[], options: PriorityOptions = {}) {
+		if (keys.includes(ALL_KEYS_CH)) throw Error("* cannot be used here (refers to all keys)")
+		this.randomized = false
 		this.ignoreNotPrioritized = !!options.ignoreNotPrioritized
 		this.priorities = keys
 		return this
 	} 
+
+	randomizePriority() {
+		this.randomized = true
+		return this
+	}
 
 	/**Set a callback to be executed syncronously (awaited if async) when flushing items for a specific key
 	* @param key - provide a key (* refers to all keys)
@@ -269,7 +302,7 @@ export class Queue<T = any> {
 	/**Set the number of milliseconds that the queue has to wait befor flushing again for a specific key (net of flush execution time)
 	* @param key - provide a key (* refers to all keys)
 	* @param delay - milliseconds*/
-	every(key: string, delay: number) {
+	flushEvery(key: string, delay: number) {
 		this.parseKey(key)
 		this.setRule(key, "every", delay)
 		return this
@@ -326,6 +359,15 @@ export class Queue<T = any> {
 		return this
 	}
 
+	/**Set a condition for pushed items to be ignored
+	 * @param keys - provide a keys (* refers to all keys)
+	 * @param condition - if returns true, the item is ignored*/
+	ignoreItem(key: string, condition: IgnoreItemCondition<T>) {
+		this.parseKey(key)
+		this.setRule(key, "ignoreItemCondition", condition)
+		return this
+	}
+
 	/**register default key rules and return true if key is the global character*/
 	private parseKey(key: string): boolean {
 		if (key == ALL_KEYS_CH) return true
@@ -347,10 +389,10 @@ export class Queue<T = any> {
 		else this.keyRules[key][rule] = value
 	}
 
-	private getRule(key: string, rule: string) {
-		if (key != ALL_KEYS_CH) return this.keyRules[key][rule]
-		else return this.globalRules[rule]
-	}
+	// private getRule(key: string, rule: string) {
+	// 	if (key != ALL_KEYS_CH) return this.keyRules[key][rule]
+	// 	else return this.globalRules[rule]
+	// }
 
 	private defaultKeyRulse(): Rules<T> {
 		return {}
