@@ -3,6 +3,7 @@ import { CloneCondition, ExecCallback, QueueItem, QueueKind, KeyRules } from "./
 import { Storage } from "./storage/Storage"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
+import { registerNewQueue } from "./pool"
 
 /**Init a Queue (FIFO by default, in Memory by default)
  * @param name - provide a unique name for the queue
@@ -24,6 +25,7 @@ class Queue<T = any> {
 	private keyRules: { [key: string]: KeyRules<T> } = {}
 
 	constructor(name: string, shiftRate: number = DEFAULT_SHIFT_RATE) {
+		registerNewQueue(name)
 		this.name = name
 		this.storage = new MemoryStorage(name)	
 		this.shiftRate = 1000 / shiftRate
