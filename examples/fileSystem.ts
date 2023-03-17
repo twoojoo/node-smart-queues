@@ -1,7 +1,7 @@
 import { ExecCallback, getQueuesList, queueExists, SmartQueue } from "../src"
 
 const logOutput: ExecCallback<number> = 
-	async (i, k, q) => {console.log(q, k, i, `${Date.now()}`)}
+	async (i, k, q) => { console.log(q, k, i, `${Date.now()}`) }
 
 const q = SmartQueue<number>("q1")
 	.fileSystemStorage("./file.txt")
