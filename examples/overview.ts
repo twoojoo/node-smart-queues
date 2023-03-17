@@ -11,7 +11,7 @@ import { QueuePool, SmartQueue } from "../src"
 		.setFlushRate(10) // set how many flushes are allowed per second (default: 60)
 		.inMemoryStorage() // set memory as storage (redundant, memory is default)
 		.randomizePriority() // overrides priority settings and randomize keys priority
-		.setPriority(["k1", "k2"], { ignoreNotPrioritized: false }) // sets the keys priority (disable randomize)
+		.setPriority(["k4", "k1", "k2"], { ignoreNotPrioritized: true }) // sets the keys priority (disable randomize)
 		.setLIFO() // set LIFO behaviour for all keys (default FIFO)
 		.setFIFO("k2") // set FIFO behaviour for key k2 only
 		.setMaxRetry("*", 3) // set a maximum of 3 retries for when a onFlush callback throws an error (default: 0)
@@ -25,6 +25,7 @@ import { QueuePool, SmartQueue } from "../src"
 		.onFlush("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (awaited if async)
 		.onFlushAsync("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (not awaited, overrides previous onFlush callbacks)
 		.onFlushAsync("k2", async (i, k, q) => console.log(new Date(), `#> flushed value (${k}):`, i)) // executed only for k2 items (overrides global onPush for k2 items)
+		.onFlush("k4", () => { throw Error("max-retry-reached") })
 
 	//print names of the queues in the queue pool
 	console.log(new Date(), `#> queue list:`, QueuePool.getQueuesList()) 
@@ -67,5 +68,8 @@ import { QueuePool, SmartQueue } from "../src"
 	// k3 items will be ignored because k3 is not prioritized
 	// and the queue is set to ignore not prioritized keys
 	await queue1.push("k3", 8)
+
+	//this should retry 3 times and throw an error on the last retry
+	await queue1.push("k4", 1)
 
 })()

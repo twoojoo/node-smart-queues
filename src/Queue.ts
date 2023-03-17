@@ -262,11 +262,16 @@ export class Queue<T = any> {
 		let retryCount = 0
 		while (retryCount < maxRetry) {
 			try {
+				if (this._logger && retryCount > 0) console.log(new Date(), `#> retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
 				await callback(item.value, key, this.name)
+				break
 			} catch (error) {
-				if (retryCount++ >= maxRetry) 
+				retryCount++
+				if (retryCount >= maxRetry) {
 					if (isMaxRetryCallbackAsync) onMaxRetryCallback(item.value, error)
 					else await onMaxRetryCallback(item.value, error)
+					break
+				}
 			}
 		}
 	}
