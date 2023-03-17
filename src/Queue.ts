@@ -240,7 +240,7 @@ export class Queue<T = any> {
 		const maxRetry = 
 			this.keyRules[key].maxRetry || 
 			this.globalRules.maxRetry || 
-			0
+			1
 
 		let onMaxRetryCallback: OnMaxRetryCallback<T>
 		let isMaxRetryCallbackAsync: boolean = false
@@ -409,7 +409,7 @@ export class Queue<T = any> {
 	/**Set a maximum retry number if the flush callback throws an error
 	 * @param key - provide a key (* refers to all keys)
 	 * @param max - number of retries*/
-	setMaxRetry(key: string, max: number = 0) {
+	setMaxRetry(key: string, max: number = 1) {
 		this.parseKey(key)
 		this.setRule(key, "maxRetry", max)
 		return this

@@ -14,7 +14,7 @@ import { QueuePool, SmartQueue } from "../src"
 		.setPriority(["k4", "k1", "k2"], { ignoreNotPrioritized: true }) // sets the keys priority (disable randomize)
 		.setLIFO() // set LIFO behaviour for all keys (default FIFO)
 		.setFIFO("k2") // set FIFO behaviour for key k2 only
-		.setMaxRetry("*", 3) // set a maximum of 3 retries for when a onFlush callback throws an error (default: 0)
+		.setMaxRetry("*", 3) // set a maximum of 3 retries (first run included) for when a onFlush callback throws an error (default: 1 )
 		.onMaxRetry("*", (i, err) => console.error(err)) // set a callback for when the max number of retries is reached (default: throw the last retry error)
 		.clonePre("*", 2, (i) => i == 3) // clone items (2 copies) before pushing them to the storage (for all keys) on a certain condition
 		.clonePost("*", 1) // clone items (1 copy - useless) before flushing them from the queue (for all keys)
