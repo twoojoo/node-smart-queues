@@ -1,5 +1,3 @@
-import { Storage } from "./storage/Storage"
-
 export type QueueKind = "LIFO" | "FIFO"
 
 export type QueueItem<T> = {
@@ -7,7 +5,7 @@ export type QueueItem<T> = {
 	value: T
 }
 
-export type KeyRules<T> = {
+export type Rules<T> = {
 	kind?: QueueKind //default fifo
 	shiftSize?: number
 	every?: number,

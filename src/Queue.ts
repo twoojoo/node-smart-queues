@@ -1,5 +1,5 @@
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
-import { CloneCondition, ExecCallback, QueueItem, QueueKind, KeyRules } from "./types"
+import { CloneCondition, ExecCallback, QueueItem, QueueKind, Rules } from "./types"
 import { Storage } from "./storage/Storage"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
@@ -21,8 +21,8 @@ class Queue<T = any> {
 	private priorities: string[] = []
 	private ignoreUnknownKeys: boolean = false
 
-	private globalRules: KeyRules<T> = {}
-	private keyRules: { [key: string]: KeyRules<T> } = {}
+	private globalRules: Rules<T> = {}
+	private keyRules: { [key: string]: Rules<T> } = {}
 
 	constructor(name: string, shiftRate: number = DEFAULT_SHIFT_RATE) {
 		registerNewQueue(name)
@@ -249,7 +249,7 @@ class Queue<T = any> {
 		else return this.globalRules[rule]
 	}
 
-	private defaultKeyRulse(): KeyRules<T> {
+	private defaultKeyRulse(): Rules<T> {
 		return {}
 	}
 
