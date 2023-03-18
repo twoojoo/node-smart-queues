@@ -28,6 +28,7 @@ This example shows a simple queue where pushed jobs will come out every second.
 import { SmartQueue } from "node-smart-queues"
 
 const queue = SmartQueue<number>("my-queue")
+	.logger(true)
 	.setDelay("my-key", 1000)
 	.onFlush("my-key", (i, k, q) => console.log(`flushed item ${i} with key ${k} from queue ${q}`))
 	.start();
