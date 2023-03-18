@@ -42,7 +42,7 @@ const queue = SmartQueue<number>("my-queue")
 
 ## Stateful
 
-Smart Queues use an in memory storage system by default (not crash safe), but you can change this by setting by using a different storage system:
+Smart Queues use an in memory storage system by default (not crash safe), but you can change this setting by using a different storage system.
 
 ### File System Storage
 
