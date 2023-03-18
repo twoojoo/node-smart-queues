@@ -1,4 +1,4 @@
-# NSQ - Node Smart Queues
+# Node Smart Queues
 
 ## Install
 
@@ -26,8 +26,8 @@ This example shows a simple queue where pushed jobs will come out every second.
 
 ```typescript
 const queue = SmartQueue<number>("my-queue")
-	.setDelay("*", 1000)
-	.onFlush("*", (i, k, q) => console.log(`flushed item ${i} with key ${k} from queue ${q}`))
+	.setDelay("my-key", 1000)
+	.onFlush("my-key", (i, k, q) => console.log(`flushed item ${i} with key ${k} from queue ${q}`))
 	.start();
 
 (async function() {
