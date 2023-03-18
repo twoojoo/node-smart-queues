@@ -59,7 +59,7 @@ const queue = SmartQueue<number>("my-queue")
 
 ### Redis Storage
 
-Will use Redis' lists as storage system. An [ioredis](https://github.com/luin/ioredis) client must be provideded to the queue. If the items pushed to the queue may be bigger than 512MB (max redis storage size), consider using the compression system (gzip) shipped with the queue system.
+Will use Redis' lists as storage system. An [ioredis](https://github.com/luin/ioredis) client must be provideded to the queue. If the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
 
 ```typescript
 import { Redis } from "ioredis"
