@@ -229,10 +229,10 @@ export class Queue<T = any> {
 	/**Push an item to the storage after executin onPush hooks if they exist*/
 	private async pushItemInStorage(key: string, item: T) {
 		if (this._logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key}`)
-		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item, key, this.name)
-		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item, key, this.name)
-		else if (this.globalRules.onPush) await this.globalRules.onPush(item, key, this.name)
-		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item, key, this.name)
+		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item, key, this)
+		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item, key, this)
+		else if (this.globalRules.onPush) await this.globalRules.onPush(item, key, this)
+		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item, key, this)
 
 		this.firstItemPushed = true
 
@@ -275,13 +275,13 @@ export class Queue<T = any> {
 		while (retryCount < maxRetry) {
 			try {
 				if (this._logger && retryCount > 0) console.log(new Date(), `#> retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
-				await callback(item, key, this.name)
+				await callback(item, key, this)
 				break
 			} catch (error) {
 				retryCount++
 				if (retryCount >= maxRetry) {
-					if (isMaxRetryCallbackAsync) onMaxRetryCallback(item, error)
-					else await onMaxRetryCallback(item, error)
+					if (isMaxRetryCallbackAsync) onMaxRetryCallback(error, item, key, this)
+					else await onMaxRetryCallback(error, item, key, this)
 					break
 				}
 			}
