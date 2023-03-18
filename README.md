@@ -46,7 +46,7 @@ Smart Queues use an in memory storage system by default (not crash safe), but yo
 
 ### File System Storage
 
-Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues.
+Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues. If the file already exists it must be empty on the first run.
 
 ```typescript
 const queue = SmartQueue<number>("my-queue")
