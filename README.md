@@ -43,7 +43,7 @@ const queue = SmartQueue<number>("my-queue")
 
 ## Stateful
 
-Smart Queues use an in memory storage system by default (not crash safe), but you can change this setting by using a different storage system. When using a safe storage system, the queue will automatically recover the hanging state as the program gets restarted. 
+Smart Queues use an in-memory storage system by default (not crash safe), but you can change this setting by using a different storage system. When using a safe storage system, the queue will automatically recover the hanging state as the program gets restarted. 
 
 ### File System Storage
 
@@ -59,4 +59,19 @@ const queue = SmartQueue<number>("my-queue")
 
 ### Redis Storage
 
-Coming soon
+Will use Redis' lists as storage system. An [ioredis]() client must be provideded to the queue. If the items pushed to the queue may be bigger than 512MB (max redis storage size), consider using the compression system (gzip) shipped with the queue system.
+
+```typescript
+import { Redis } from "ioredis"
+
+const redis = new Redis({
+	host: "localhost",
+	port: 6379
+})
+
+const queue = SmartQueue<number>("my-queue")
+	.redisStorage(redis)
+	.setDelay("my-key", 1000)
+	.onFlush("my-key", (i) => console.log(i)
+	.start();
+```
