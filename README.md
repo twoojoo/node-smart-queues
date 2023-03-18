@@ -42,11 +42,11 @@ const queue = SmartQueue<number>("my-queue")
 
 ## Stateful
 
-Smart Queues use an in memory storage system by default (not crash safe), but you can change this setting by using a different storage system.
+Smart Queues use an in memory storage system by default (not crash safe), but you can change this setting by using a different storage system. When using a safe storage system, the queue will automatically recover the hanging state as the program gets restarted. 
 
 ### File System Storage
 
-Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues. 
+Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues.
 
 ```typescript
 const queue = SmartQueue<number>("my-queue")
