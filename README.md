@@ -43,7 +43,7 @@ const queue = SmartQueue<number>("my-queue")
 
 ## Stateful
 
-Smart Queues use an in-memory storage system by default (not crash safe), but you can change this setting by using a different storage system. When using a safe storage system, the queue will automatically recover the hanging state as the program gets restarted. 
+Smart Queues use an in-memory storage system by default (not crash safe), but you can change this setting by using a different storage system. When using a safe storage system, the queue will automatically recover the hanging state as soon as the program gets restarted. 
 
 ### File System Storage
 
@@ -59,7 +59,7 @@ const queue = SmartQueue<number>("my-queue")
 
 ### Redis Storage
 
-Will use Redis' lists as storage system. An [ioredis](https://github.com/luin/ioredis) client must be provideded to the queue. If the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
+Will use Redis' lists as storage system. An [ioredis](https://github.com/luin/ioredis) client must be provideded to the queue. If you think that the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
 
 ```typescript
 import { Redis } from "ioredis"
