@@ -1,7 +1,7 @@
 import { StorageShiftOutput } from "../types";
 import { QueueItem } from "../types";
 
-export abstract class Storage<T> {
+export abstract class Storage {
 	protected name: string
 
 	constructor(name: string) {
@@ -12,7 +12,7 @@ export abstract class Storage<T> {
 		return this.name
 	}
 
-	abstract push(key: string, item: QueueItem<T>): Promise<void>
-	abstract shiftFIFO(key: string, count: number): Promise<StorageShiftOutput<T>>
-	abstract shiftLIFO(key: string, count: number): Promise<StorageShiftOutput<T>>
+	abstract push(key: string, item: QueueItem): Promise<void>
+	abstract shiftFIFO(key: string, count: number): Promise<StorageShiftOutput>
+	abstract shiftLIFO(key: string, count: number): Promise<StorageShiftOutput>
 }

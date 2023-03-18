@@ -1,6 +1,11 @@
 export type QueueKind = "LIFO" | "FIFO"
 
-export type QueueItem<T> = {
+export type QueueItem = {
+	pushTimestamp: number
+	value: Buffer
+}
+
+export type QueueItemParsed<T> = {
 	pushTimestamp: number
 	value: T
 }
@@ -39,9 +44,9 @@ export type IgnoreItemCondition<T = any> = (item: T) => boolean
 
 export type StoredCount = { [key: string]: number }
 
-export type StorageShiftOutput<T> = {
+export type StorageShiftOutput = {
 	storedCount: StoredCount
-	items: QueueItem<T>[]
+	items: QueueItem[]
 }
 
 export type OnPushCallback<T = any> = (item: T, key?: string, queue?: string) => any

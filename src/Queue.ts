@@ -1,10 +1,13 @@
-import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, QueueItem, QueueKind, Rules } from "./types"
+import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, QueueItem, QueueItemParsed, QueueKind, Rules, StorageShiftOutput } from "./types"
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
+import { RedisStorage } from "./storage/Redis"
 import { Storage } from "./storage/Storage"
 import { registerNewQueue } from "./pool"
+import { gzip, ungzip } from "node-gzip"
 import { shuffleArray } from "./utils"
+import { Redis } from "ioredis"
 
 /**Init a Queue (FIFO by default, in Memory by default)
  * @param name - provide a unique name for the queue*/
@@ -13,7 +16,7 @@ export function SmartQueue<T = any>(name: string) {
 }
 
 export class Queue<T = any> {
-	private storage: Storage<T>
+	private storage: Storage
 	private _logger: boolean = false
 	private name: string
 	private shiftRate: number = 1000 / DEFAULT_SHIFT_RATE
@@ -29,6 +32,9 @@ export class Queue<T = any> {
 
 	private globalRules: Rules<T> = {}
 	private keyRules: { [key: string]: Rules<T> } = {}
+
+	private firstItemPushed: boolean = false
+	private _gzip: boolean = false
 
 	constructor(name: string) {
 		this.name = name
@@ -118,7 +124,7 @@ export class Queue<T = any> {
 					}
 
 					const shiftSize = keyRules.shiftSize || 1
-					const output = this.getKeyShiftKind(key) == "FIFO" ?
+					const output: StorageShiftOutput = this.getKeyShiftKind(key) == "FIFO" ?
 						await this.storage.shiftFIFO(key, shiftSize) : 
 						await this.storage.shiftLIFO(key, shiftSize)
 					
@@ -128,13 +134,13 @@ export class Queue<T = any> {
 							this.shiftEnabled = true
 
 					if (output.items.length != 0) {
-						for (let item of this.parseItemsPost(key, output.items)) {
+						for (let item of await this.parseItemsPost(key, output.items)) {
 							if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
-								if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item, this.keyRules[key].exec)
-								else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item, this.keyRules[key].execAsync)
+								if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item.value, this.keyRules[key].exec)
+								else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item.value, this.keyRules[key].execAsync)
 							} else if (this.globalRules.exec || this.globalRules.execAsync) {
-								if (this.globalRules.exec) this.flushItemFromQueue(key, item, this.globalRules.exec)
-								else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item, this.globalRules.execAsync)
+								if (this.globalRules.exec) this.flushItemFromQueue(key, item.value, this.globalRules.exec)
+								else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item.value, this.globalRules.execAsync)
 							}
 						}
 
@@ -193,10 +199,6 @@ export class Queue<T = any> {
 			if (ignoreItemCondition(item))
 				return false
 
-		const queueItem: QueueItem<T> = {
-			pushTimestamp: Date.now(),
-			value: item
-		}
 
 		const cloneNum = 
 			this.keyRules[key].clonePre ||
@@ -214,10 +216,10 @@ export class Queue<T = any> {
 
 			if (toBeCloned) {
 				for (let i = 0; i < cloneNum; i++) 
-					await this.pushItemInStorage(key, queueItem)
-			} else await this.pushItemInStorage(key, queueItem)
+					await this.pushItemInStorage(key, item)
+			} else await this.pushItemInStorage(key, item)
 
-		} else await this.pushItemInStorage(key, queueItem)
+		} else await this.pushItemInStorage(key, item)
 
 		this.shiftEnabled = true
 
@@ -225,16 +227,26 @@ export class Queue<T = any> {
 	}
 
 	/**Push an item to the storage after executin onPush hooks if they exist*/
-	private async pushItemInStorage(key: string, item: QueueItem<T>) {
+	private async pushItemInStorage(key: string, item: T) {
 		if (this._logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key}`)
-		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item.value, key, this.name)
-		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item.value, key, this.name)
-		else if (this.globalRules.onPush) await this.globalRules.onPush(item.value, key, this.name)
-		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item.value, key, this.name)
-		this.storage.push(key, item)
+		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item, key, this.name)
+		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item, key, this.name)
+		else if (this.globalRules.onPush) await this.globalRules.onPush(item, key, this.name)
+		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item, key, this.name)
+
+		this.firstItemPushed = true
+
+
+
+		this.storage.push(key, {
+			pushTimestamp: Date.now(),
+			value: this._gzip ?
+				await this.gzipItemString(JSON.stringify(item)) : 
+				Buffer.from(JSON.stringify(item))
+		})
 	}
 
-	private async flushItemFromQueue(key: string, item: QueueItem<T>, callback: ExecCallback<T>) {
+	private async flushItemFromQueue(key: string, item: T, callback: ExecCallback<T>) {
 		if (this._logger) console.log(new Date(), `#> flushed item - queue: ${this.name} - key: ${key}`)
 
 		const maxRetry = 
@@ -263,13 +275,13 @@ export class Queue<T = any> {
 		while (retryCount < maxRetry) {
 			try {
 				if (this._logger && retryCount > 0) console.log(new Date(), `#> retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
-				await callback(item.value, key, this.name)
+				await callback(item, key, this.name)
 				break
 			} catch (error) {
 				retryCount++
 				if (retryCount >= maxRetry) {
-					if (isMaxRetryCallbackAsync) onMaxRetryCallback(item.value, error)
-					else await onMaxRetryCallback(item.value, error)
+					if (isMaxRetryCallbackAsync) onMaxRetryCallback(item, error)
+					else await onMaxRetryCallback(item, error)
 					break
 				}
 			}
@@ -466,7 +478,7 @@ export class Queue<T = any> {
 	}
 
 	/**Clones items if a clonePost rule is provided for the key or as a global rule*/
-	private parseItemsPost(key: string, items: QueueItem<T>[]): QueueItem<T>[] {
+	private async parseItemsPost(key: string, items: QueueItem[]): Promise<QueueItemParsed<T>[]> {
 		let clonesNum: number
 		let cloneCondition: CloneCondition<T>
 
@@ -478,8 +490,14 @@ export class Queue<T = any> {
 			cloneCondition = this.globalRules.clonePostCondition
 		}
 
-		if (!clonesNum) return items
-		else return items.flatMap(i => {
+		const parsedItems: QueueItemParsed<T>[] = []
+
+		for (let item of items) 
+			parsedItems.push(await this.parseQueueItem(item))
+		
+
+		if (!clonesNum) return parsedItems
+		else return parsedItems.flatMap(i => {
 			const toBeCloned = cloneCondition ? cloneCondition(i.value) : true
 			if (toBeCloned) {
 				const clonedItems = []
@@ -496,7 +514,6 @@ export class Queue<T = any> {
 	isPaused(): boolean {
 		return this.paused
 	}
-
 
 
 	/**Tells if a key is ignored by the queue*/
@@ -517,6 +534,13 @@ export class Queue<T = any> {
 		return this
 	}
 
+	/**Set a Redis storage
+	 * @param redis - provide an ioredis client*/
+	redisStorage(redis: Redis) {
+		this.storage = new RedisStorage(this.name, redis)
+		return this
+	}
+
 	/**Set an in Memory storage (default)*/
 	inMemoryStorage() {
 		this.storage = new MemoryStorage(this.name)
@@ -532,4 +556,37 @@ export class Queue<T = any> {
 		this.shiftRate = 1000 / rate
 		return this
 	}
+
+	/**Enable items gzipping before pushing them to the storage (disabled by default). 
+	 * It's not allowed to set gzipping if the first item has already been pushed to the queue.*/
+	gzip() {
+		if (this.firstItemPushed) throw Error("cannot set gzip because an item has already been pushed to the queue")
+		this._gzip = true
+		return this
+	}
+
+	private async gzipItemString(item: string): Promise<Buffer> {
+		return await gzip(item)
+	}
+
+	private async ungzipItemString(gzipped: Buffer): Promise<string> {
+		const buffer = await ungzip(Buffer.from(gzipped))
+		return buffer.toString()
+	}
+
+	private async parseQueueItem(item: QueueItem): Promise<QueueItemParsed<T>> {
+		let parsedItem: QueueItemParsed<T> = (item as unknown) as QueueItemParsed<T> 
+
+		try {
+			let toBeParsed
+			if (this._gzip) toBeParsed = await this.ungzipItemString(item.value)
+			parsedItem.value = JSON.parse(toBeParsed)
+			return parsedItem
+		} catch (err) {
+			// console.log(err)
+			// console.log(Buffer.from(item.value).toString())
+			parsedItem.value = JSON.parse(Buffer.from(item.value).toString()) as T
+			return parsedItem
+		}
+	} 
 }

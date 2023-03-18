@@ -6,7 +6,7 @@ import fs from "fs"
 const SEPARATOR = "§çn§çq§çs§çsep§ç"
 const LINE_END = SEPARATOR + "\n"
 
-export class FileSystemStorage<T = any> extends Storage<T> {
+export class FileSystemStorage extends Storage {
 	private file: string
 
 	constructor(name: string, file: string) {
@@ -17,19 +17,19 @@ export class FileSystemStorage<T = any> extends Storage<T> {
 		registerNewStorage(this)
 	}
 
-	async push(key: string, item: QueueItem<T>): Promise<void> {
+	async push(key: string, item: QueueItem): Promise<void> {
 		fs.appendFileSync(this.file, this.name + SEPARATOR + key + SEPARATOR + item.pushTimestamp + SEPARATOR + JSON.stringify(item.value) + LINE_END)
 	}
 
-	async shiftFIFO(key: string, count: number): Promise<StorageShiftOutput<T>> {
+	async shiftFIFO(key: string, count: number): Promise<StorageShiftOutput> {
 		return this.shift("FIFO", key, count)
 	}
 
-	async shiftLIFO(key: string, count: number): Promise<StorageShiftOutput<T>> {
+	async shiftLIFO(key: string, count: number): Promise<StorageShiftOutput> {
 		return this.shift("LIFO", key, count)
 	}
 
-	async shift(kind: QueueKind, key: string, count: number): Promise<StorageShiftOutput<T>> {
+	async shift(kind: QueueKind, key: string, count: number): Promise<StorageShiftOutput> {
 		let storage: any[] = fs
 			.readFileSync(this.file)
 			.toString()
@@ -67,7 +67,7 @@ export class FileSystemStorage<T = any> extends Storage<T> {
 			}
 		})
 
-		const items: QueueItem<T>[] = (
+		const items: QueueItem[] = (
 			kind == "FIFO" ? 
 				keyStorage.splice(0, count) :
 				keyStorage.splice(keyStorage.length - count, count)

@@ -4,11 +4,13 @@ const logOutput: ExecCallback<number> =
 	async (i, k, q) => { console.log(q, k, i, `${Date.now()}`) }
 
 const q = SmartQueue<number>("q1")
+	.logger(true)
 	.fileSystemStorage("./file.txt")
 	.setFIFO("k1")
 	.setLIFO("k2")
 	.setDelay("*", 1000)
 	.onFlushAsync("*", logOutput)
+	.gzip()
 	.start();
 
 (async function () {

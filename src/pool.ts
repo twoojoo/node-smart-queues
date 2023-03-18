@@ -2,7 +2,7 @@ import { Storage } from "./storage/Storage"
 import { Queue } from "./Queue"
 
 const queuePool: Queue<any>[] = []
-const storagePool: Storage<any>[] = []
+const storagePool: Storage[] = []
 
 /**Collects all queues. 
 * Checks if queue names are unique before registering a new name (throw an error if the name already exists). */
@@ -14,7 +14,7 @@ export function registerNewQueue(queue: Queue) {
 }
 
 /**Collects all storages*/
-export function registerNewStorage<T>(storage: Storage<T>) {
+export function registerNewStorage<T>(storage: Storage) {
 	storagePool.push(storage)
 }
 

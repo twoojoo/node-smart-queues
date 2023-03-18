@@ -26,6 +26,7 @@ import { QueuePool, SmartQueue } from "../src"
 		.onFlushAsync("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (not awaited, overrides previous onFlush callbacks)
 		.onFlushAsync("k2", async (i, k, q) => console.log(new Date(), `#> flushed value (${k}):`, i)) // executed only for k2 items (overrides global onPush for k2 items)
 		.onFlush("k4", () => { throw Error("max-retry-reached") })
+		.gzip() //gzip items before pushing
 
 	//print names of the queues in the queue pool
 	console.log(new Date(), `#> queue list:`, QueuePool.getQueuesList()) 
