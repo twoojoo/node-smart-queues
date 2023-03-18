@@ -9,7 +9,7 @@ npm install node-smart-queues
 ## Features
 
 - Stateful
-- Crash safe (revovery)
+- Crash safe (recovery)
 - Jobs keys
 - Delayed jobs
 - Concurrent queues
