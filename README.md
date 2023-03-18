@@ -1,11 +1,5 @@
 # Node Smart Queues
 
-## Install
-
-```bash
-npm install node-smart-queues
-```
-
 ## Features
 
 - Stateful
@@ -17,8 +11,15 @@ npm install node-smart-queues
 - Randomizable
 - FIFO / LIFO 
 - Queues pool
+- Compression
 - Fluent interface
 - Typescript first
+
+## Installation
+
+```bash
+npm install node-smart-queues
+```
 
 ## Basic usage
 

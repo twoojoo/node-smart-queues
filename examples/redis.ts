@@ -1,10 +1,7 @@
 import { ExecCallback, SmartQueue } from "../src"
 import { Redis } from "ioredis"
 
-const lorem = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-
-const logOutput: ExecCallback = 
-	async (i) => { console.log(new Date(), `#>`, i) }
+const lorem = "Lorem ipsum dolor sit amet, consectetur adipisci elit, sed do eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrum exercitationem ullamco laboriosam, nisi ut aliquid ex ea commodi consequatur. Duis aute irure reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint obcaecat cupiditat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
 (async function () {
 	const redis = new Redis({
@@ -12,19 +9,19 @@ const logOutput: ExecCallback =
 		port: 6379
 	})
 
-	const q = SmartQueue("q1")
+	const q = SmartQueue<string>("q1")
 		.logger(true)
 		.redisStorage(redis)
-		// .setDelay("*", 1000)
-		.onFlushAsync("*", logOutput)
+		.setDelay("*", 1000)
+		.onFlushAsync("*", (i) => console.log(new Date(), `#>`, i))
 		.gzip()
 		.start();
 
-	await q.push("k1", 1)
-	await q.push("k1", 2)
 	await q.push("k1", lorem)
 	await q.push("k1", lorem)
-	await q.push("k1", 3)
+	await q.push("k1", lorem)
+	await q.push("k1", lorem)
+	await q.push("k1", lorem)
 	await q.push("k2", lorem)
 	await q.push("k2", lorem)
 })()
