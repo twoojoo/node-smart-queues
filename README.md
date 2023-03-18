@@ -39,3 +39,23 @@ const queue = SmartQueue<number>("my-queue")
 	await queue.push("my-key", 3)
 })()
 ```
+
+## Stateful
+
+Smart Queues use an in memory storage system by default (not crash safe), but you can change this by setting by using a different storage system:
+
+### File System Storage
+
+Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared my multiple concurrent queues. 
+
+```typescript
+const queue = SmartQueue<number>("my-queue")
+	.fileSystemStorage("./file.txt")
+	.setDelay("my-key", 1000)
+	.onFlush("my-key", (i) => console.log(i)
+	.start();
+```
+
+### Redis Storage
+
+Coming soon
