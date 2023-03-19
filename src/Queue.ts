@@ -119,11 +119,15 @@ export class Queue<T = any> {
 	}
 
 	private async startShiftLoop() {
+		if (this.looping) return
+
 		this.looping = true
 		clearInterval(this.mainInterval)
 		await this.recover()
 
 		this.mainInterval = setInterval(async () => {
+			const start = Date.now()
+
 			if (this.paused || !this.shiftEnabled) {
 				this.looping = false
 				clearInterval(this.mainInterval)
@@ -161,11 +165,11 @@ export class Queue<T = any> {
 				if (output.items.length != 0) {
 					for (let item of await this.parseItemsPost(key, output.items)) {
 						if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
-							if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item.value, this.keyRules[key].exec)
-							else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item.value, this.keyRules[key].execAsync)
+							if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item.value, this.keyRules[key].exec, start)
+							else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item.value, this.keyRules[key].execAsync, start)
 						} else if (this.globalRules.exec || this.globalRules.execAsync) {
-							if (this.globalRules.exec) this.flushItemFromQueue(key, item.value, this.globalRules.exec)
-							else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item.value, this.globalRules.execAsync)
+							if (this.globalRules.exec) await this.flushItemFromQueue(key, item.value, this.globalRules.exec, start)
+							else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item.value, this.globalRules.execAsync, start)
 						}
 					}
 
@@ -253,6 +257,7 @@ export class Queue<T = any> {
 	 * */
 	async push(key: string, item: T, options: PushOptions = {}): Promise<PushResult> {
 		try {
+			const pushTimestamp = Date.now()
 			if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
 
 			//check if the key is to be ignored
@@ -293,13 +298,13 @@ export class Queue<T = any> {
 
 				if (toBeCloned) {
 					for (let i = 0; i < cloneNum; i++) 
-						await this.pushItemInStorage(key, item)
-				} else await this.pushItemInStorage(key, item)
+						await this.pushItemInStorage(key, item, pushTimestamp)
+				} else await this.pushItemInStorage(key, item, pushTimestamp)
 
-			} else await this.pushItemInStorage(key, item)
+			} else await this.pushItemInStorage(key, item, pushTimestamp)
 
 			this.shiftEnabled = true
-
+			this.startShiftLoop()
 			return { pushed: true }
 		} catch (error) {
 			if (options.throwErrors !== false) throw error
@@ -312,8 +317,7 @@ export class Queue<T = any> {
 	}
 
 	/**Push an item to the storage after executin onPush hooks if they exist*/
-	private async pushItemInStorage(key: string, item: T) {
-		if (this._logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key}`)
+	private async pushItemInStorage(key: string, item: T, pushTimestamp: number) {
 		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item, key, this)
 		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item, key, this)
 		else if (this.globalRules.onPush) await this.globalRules.onPush(item, key, this)
@@ -321,18 +325,17 @@ export class Queue<T = any> {
 
 		this.firstItemPushed = true
 
-
-
 		this.storage.push(key, {
-			pushTimestamp: Date.now(),
+			pushTimestamp,
 			value: this._gzip ?
 				await this.gzipItemString(JSON.stringify(item)) : 
 				Buffer.from(JSON.stringify(item))
 		})
+
+		if (this._logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key} [${Date.now() - pushTimestamp}ms]`)
 	}
 
-	private async flushItemFromQueue(key: string, item: T, callback: ExecCallback<T>) {
-		if (this._logger) console.log(new Date(), `#> flushed item - queue: ${this.name} - key: ${key}`)
+	private async flushItemFromQueue(key: string, item: T, callback: ExecCallback<T>, start: number) {
 
 		const maxRetry = 
 			this.keyRules[key].maxRetry || 
@@ -355,14 +358,15 @@ export class Queue<T = any> {
 			onMaxRetryCallback = this.globalRules.onMaxRetryAsync
 			isMaxRetryCallbackAsync = false
 		} else onMaxRetryCallback = ((_, error) => { throw error })
-
+		
 		let retryCount = 0
 		while (retryCount < maxRetry) {
 			try {
-				if (this._logger && retryCount > 0) console.log(new Date(), `#> retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
+				if (this._logger) console.log(new Date(), `#> flushed item - queue: ${this.name} - key: ${key} [${Date.now() - start}ms]`)
 				await callback(item, key, this)
 				break
 			} catch (error) {
+				if (this._logger && retryCount > 0) console.log(new Date(), `#> retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
 				retryCount++
 				if (retryCount >= maxRetry) {
 					if (isMaxRetryCallbackAsync) onMaxRetryCallback(error, item, key, this)
