@@ -12,7 +12,8 @@
 - FIFO / LIFO 
 - Queues pool
 - Compression
-- Fluent interface
+- Fluent syntax
+- HTTP interface
 - Typescript first
 
 ## Installation
