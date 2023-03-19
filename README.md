@@ -89,13 +89,10 @@ import { nsqHttpInterface } from "node-smart-queues-http"
 	await nsqHttpInterface(QueuesPool, {port: 3000, logger: true})
 
 	const q = SmartQueue<string>("q1")
-		.logger(true)
-		.ignoreKeys(["kx"])
-		.onFlushAsync("*", (i) => console.log(new Date(), `#>`, i))
-		.gzip()
+		.onFlushAsync("*", (i) => console.log(i))
 		.start();
 
-	while(true) {
+	while(true) { //push 1 message every second
 		await new Promise(r => setTimeout(() => r(0), 1000))
 		await q.push(`k1`, "message")
 	}
