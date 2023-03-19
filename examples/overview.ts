@@ -51,9 +51,6 @@ import { QueuesPool, SmartQueue } from "../src"
 	console.log(new Date(), `#> is k1 ignored (1):`, queue1.isKeyIgnored("k1")) //true
 	console.log(new Date(), `#> is k1 ignored (2):`, QueuesPool.isQueueKeyIgnored("q1", "k1")) //same as previous
 
-	console.log(new Date(), `#> is q1 looping (1):`, queue1.isLooping()) //false (cause it's still paused)
-	console.log(new Date(), `#> is q1 looping (2):`, QueuesPool.isQueueLooping("q1")) //same as previous
-
 	//restoring k1 will enable k1 item pushing
 	queue1.restoreKeys(["k1"])
 
