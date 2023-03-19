@@ -1,6 +1,7 @@
 node_modules
-npmrc
+.npmrc
 src
 examples
 tsconfig
 file.txt
+rest

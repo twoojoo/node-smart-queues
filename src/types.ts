@@ -1,5 +1,16 @@
 import { Queue } from "./Queue"
 
+export type QueuePool = {
+	queues: Queue<any>[],
+	getQueuesList: () => string[],
+	queueExists: (name: string) => boolean,
+	getQueue: (name: string) => Queue,
+	isQueueLooping: (name: string) => boolean,
+	isQueuePaused: (name: string) => boolean,
+	isQueueKeyIgnored: (name: string, key: string) => boolean,
+	[x: string]: any
+}
+
 export type QueueKind = "LIFO" | "FIFO"
 
 export type QueueItem = {

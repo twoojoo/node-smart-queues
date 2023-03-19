@@ -1,4 +1,4 @@
-import { QueuePool, SmartQueue } from "../src"
+import { QueuesPool, SmartQueue } from "../src"
 
 (async function () {
 	/**NOTE: asterisk ("*") is a special character that refers to all keys accross the queue.
@@ -30,11 +30,11 @@ import { QueuePool, SmartQueue } from "../src"
 		.gzip() //compress stored items
 
 	//print names of the queues in the queue pool
-	console.log(new Date(), `#> queue list:`, QueuePool.getQueuesList()) 
+	console.log(new Date(), `#> queue list:`, QueuesPool.getQueuesList()) 
 
 	//tells if a queue exists
-	console.log(new Date(), `#> queue q1 exists:`, QueuePool.queueExists("q1")) //true
-	console.log(new Date(), `#> queue q2 exists:`, QueuePool.queueExists("q2")) //false
+	console.log(new Date(), `#> queue q1 exists:`, QueuesPool.queueExists("q1")) //true
+	console.log(new Date(), `#> queue q2 exists:`, QueuesPool.queueExists("q2")) //false
 
 	queue1
 		.start() // starts the queue shifiting (push is always active)
@@ -42,17 +42,17 @@ import { QueuePool, SmartQueue } from "../src"
 	//providing no timer will cause the quee to pause indefinitely (until the a start() is manually triggered)
 
 	console.log(new Date(), `#> is q1 paused (1):`, queue1.isPaused()) //true
-	console.log(new Date(), `#> is q1 paused (2):`, QueuePool.isQueuePaused("q1")) //same as previous
+	console.log(new Date(), `#> is q1 paused (2):`, QueuesPool.isQueuePaused("q1")) //same as previous
 
 	//these items will be skipped because key k1 is ignored here
 	await queue1.push("k1", 1)
 	await queue1.push("k1", 2)
 
 	console.log(new Date(), `#> is k1 ignored (1):`, queue1.isKeyIgnored("k1")) //true
-	console.log(new Date(), `#> is k1 ignored (2):`, QueuePool.isQueueKeyIgnored("q1", "k1")) //same as previous
+	console.log(new Date(), `#> is k1 ignored (2):`, QueuesPool.isQueueKeyIgnored("q1", "k1")) //same as previous
 
 	console.log(new Date(), `#> is q1 looping (1):`, queue1.isLooping()) //false (cause it's still paused)
-	console.log(new Date(), `#> is q1 looping (2):`, QueuePool.isQueueLooping("q1")) //same as previous
+	console.log(new Date(), `#> is q1 looping (2):`, QueuesPool.isQueueLooping("q1")) //same as previous
 
 	//restoring k1 will enable k1 item pushing
 	queue1.restoreKeys(["k1"])
