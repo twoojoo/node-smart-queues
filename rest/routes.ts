@@ -7,7 +7,7 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		url: "/v1/queue",
 		handler: (_, rep) => {
 			const queueList = pool.getQueuesList()
-			rep.send(queueList.join(", "))
+			rep.send(queueList.join(","))
 		}
 	}, {
 		method: "GET",
