@@ -43,6 +43,7 @@ export class Queue<T = any> {
 		registerNewQueue(this)
 	}
 
+	/**Returns the name of the queue*/
 	getName() {
 		return this.name
 	}
@@ -50,11 +51,8 @@ export class Queue<T = any> {
 	/**Starts the queue*/
 	start() {
 		if (this._logger) console.log(new Date(), `#> starting queue`, this.name)
-
 		this.paused = false
-
 		if (!this.looping) this.startShiftLoop()
-
 		return this
 	}
 
@@ -93,11 +91,8 @@ export class Queue<T = any> {
 
 	private calculatePriority(): string[] {
 		const currentKeys = Object.keys(this.keyRules)
-
 		if (this.randomized) return shuffleArray(currentKeys)
-		
 		const notPrioritized = currentKeys.filter(key => !this.priorities.includes(key))
-
 		return this.priorities.concat(notPrioritized)
 	}
 
@@ -107,12 +102,10 @@ export class Queue<T = any> {
 
 			const storedCount = await this.storage.getStoredCount()
 
-			// let recoveryCount = 0
 			const knownKeys = Object.keys(this.keyRules)
-			for (let [key, count] of Object.entries(storedCount)) {
+			for (let key of Object.keys(storedCount)) {
 				if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
 				this.shiftEnabled = true
-				// recoveryCount += count
 			}
 
 			this.alreadyStartedOnce = true
@@ -123,12 +116,14 @@ export class Queue<T = any> {
 
 	private async startShiftLoop() {
 		this.looping = true
-
 		await this.recover()
 
-		setInterval(async () => {
-			if (this.paused) return
-			if (!this.shiftEnabled) return
+		const mainInterval = setInterval(async () => {
+			if (this.paused || !this.shiftEnabled) {
+				this.looping = false
+				clearInterval(mainInterval)
+				return
+			}
 
 			for (let key of this.calculatePriority()) {
 				const keyRules = this.keyRules[key] || {}
@@ -170,10 +165,9 @@ export class Queue<T = any> {
 					}
 
 					if (keyRules.every || this.globalRules.every) this.lockKey(key)
-					return //return every time that something get flushed from the queue in order to recalculate priorities
+					break //return every time that something get flushed from the queue in order to recalculate priorities
 				}
 			}
-
 		}, this.shiftRate)
 		
 		// while (true) {
