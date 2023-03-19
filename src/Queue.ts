@@ -37,6 +37,8 @@ export class Queue<T = any> {
 	private firstItemPushed: boolean = false
 	private _gzip: boolean = false
 
+	private mainInterval: NodeJS.Timer = undefined 
+
 	constructor(name: string) {
 		this.name = name
 		this.storage = new MemoryStorage(name)	
@@ -102,26 +104,29 @@ export class Queue<T = any> {
 
 			const storedCount = await this.storage.getStoredCount()
 
+			let recoverCount = 0
 			const knownKeys = Object.keys(this.keyRules)
-			for (let key of Object.keys(storedCount)) {
+			for (let [key, count] of Object.entries(storedCount)) {
 				if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
 				this.shiftEnabled = true
+				recoverCount += count
 			}
 
 			this.alreadyStartedOnce = true
 
-			this.logger && console.log(new Date(), `#> recovering done`)
+			this.logger && console.log(new Date(), `#> recovered ${recoverCount} items from storage`)
 		}
 	}
 
 	private async startShiftLoop() {
 		this.looping = true
+		clearInterval(this.mainInterval)
 		await this.recover()
 
-		const mainInterval = setInterval(async () => {
+		this.mainInterval = setInterval(async () => {
 			if (this.paused || !this.shiftEnabled) {
 				this.looping = false
-				clearInterval(mainInterval)
+				clearInterval(this.mainInterval)
 				return
 			}
 
