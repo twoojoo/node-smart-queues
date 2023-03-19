@@ -1,4 +1,4 @@
-import { StorageShiftOutput } from "../types";
+import { StorageShiftOutput, StoredCount } from "../types";
 import { QueueItem } from "../types";
 
 export abstract class Storage {
@@ -13,6 +13,10 @@ export abstract class Storage {
 	}
 
 	abstract push(key: string, item: QueueItem): Promise<void>
+	
 	abstract shiftFIFO(key: string, count: number): Promise<StorageShiftOutput>
+
 	abstract shiftLIFO(key: string, count: number): Promise<StorageShiftOutput>
+
+	abstract getStoredCount(): Promise<StoredCount>
 }

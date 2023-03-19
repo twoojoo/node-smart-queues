@@ -34,11 +34,11 @@ export class MemoryStorage<T = any> extends Storage {
 
 		return {
 			items,
-			storedCount: this.getStoredCount()
+			storedCount: await this.getStoredCount()
 		}
 	}
 
-	private getStoredCount(): StoredCount {
+	async getStoredCount(): Promise<StoredCount> {
 		const storedCount: StoredCount = {}
 
 		for (const key in this.memory) {

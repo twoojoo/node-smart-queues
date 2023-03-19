@@ -22,7 +22,7 @@ export class RedisStorage extends Storage {
 		const items: any[] = []
 
 		for (let i = 0; i < count; i++) {
-			const item = await this.redis.lpop(this.buildListKey(key))
+			const item = await this.redis.rpop(this.buildListKey(key))
 			if (item) items.push(JSON.parse(item))
 		}
 
@@ -36,7 +36,7 @@ export class RedisStorage extends Storage {
 		const items: any[] = []
 
 		for (let i = 0; i < count; i++) {
-			const item = await this.redis.rpop(this.buildListKey(key))
+			const item = await this.redis.lpop(this.buildListKey(key))
 			if (item) items.push(JSON.parse(item))
 		}
 
@@ -46,14 +46,14 @@ export class RedisStorage extends Storage {
 		}
 	}
 
-	private async getStoredCount(): Promise<StoredCount> {
+	async getStoredCount(): Promise<StoredCount> {
 		const storedCount: StoredCount = {}
 
 		const keys = await this.redis.keys(this.keyHead + "*")
 
 		for (const key of keys ) {
 			if (!key.startsWith(this.keyHead)) continue
-			storedCount[key] = await this.redis.llen(key)
+			storedCount[this.getItemKey(key)] = await this.redis.llen(key)
 		}
 
 		return storedCount
@@ -61,5 +61,9 @@ export class RedisStorage extends Storage {
 
 	private buildListKey(key: string) {
 		return this.keyHead + key
+	}
+
+	private getItemKey(redisKey: string) {
+		return redisKey.split(this.keyHead)[1]
 	}
 }

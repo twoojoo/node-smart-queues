@@ -37,6 +37,17 @@ export type PriorityOptions = {
 	ignoreNotPrioritized?: boolean
 }
 
+export type PushOptions = {
+	throwErrors?: boolean
+}
+
+export type PushResult= {
+	pushed: boolean
+	message?: string
+	error?: Error
+}
+
+
 type GenericQueueCallback<T = any> = (item: T, key?: string, queue?: Queue) => any
 export type ExecCallback<T = any> = GenericQueueCallback<T>
 export type OnPushCallback<T = any> = GenericQueueCallback<T>

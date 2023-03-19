@@ -11,22 +11,23 @@ import { QueuePool, SmartQueue } from "../src"
 		.setFlushRate(10) // set how many flushes are allowed per second (default: 60)
 		.inMemoryStorage() // set memory as storage (redundant, memory is default)
 		.randomizePriority() // overrides priority settings and randomize keys priority
-		.setPriority(["k4", "k1", "k2"], { ignoreNotPrioritized: true }) // sets the keys priority (disable randomize)
+		.setPriority(["k1", "k2", "k4"], { ignoreNotPrioritized: true }) // sets the keys priority (disable randomize)
 		.setLIFO() // set LIFO behaviour for all keys (default FIFO)
 		.setFIFO("k2") // set FIFO behaviour for key k2 only
 		.setMaxRetry("*", 3) // set a maximum of 3 retries (first run included) for when a onFlush callback throws an error (default: 1 )
-		.onMaxRetry("*", (i, err) => console.error(err)) // set a callback for when the max number of retries is reached (default: throw the last retry error)
+		.onMaxRetry("*", (e, i, k, q) => { console.error(e); q.pause(5000) }) // set a callback for when the max number of retries is reached (default: throw the last retry error)
 		.clonePre("*", 2, (i) => i == 3) // clone items (2 copies) before pushing them to the storage (for all keys) on a certain condition
 		.clonePost("*", 1) // clone items (1 copy - useless) before flushing them from the queue (for all keys)
 		.setDelay("*", 1000) // set a distance of 1000ms between each flush for all keys
 		.setDelay("k1", 3000) // set a distance of 3000ms between each flush for key "k1" only (overrides the global "flushEvert" setting)
 		.flushSize("*", 2) // flush 2 items at one time for every key
 		.ignoreKeys("k1") // ignore items pushed for key k1
+		.ignoreItems("k2", (i) => i == 5) //ignore all k2 items that match the provided conditon
 		.onFlush("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (awaited if async)
 		.onFlushAsync("*", async (i, k, q) => console.log(new Date(), `#> flushed value:`, i)) // executed for every item flushed (not awaited, overrides previous onFlush callbacks)
 		.onFlushAsync("k2", async (i, k, q) => console.log(new Date(), `#> flushed value (${k}):`, i)) // executed only for k2 items (overrides global onPush for k2 items)
-		.onFlush("k4", () => { throw Error("max-retry-reached") })
-		.gzip() //gzip items before pushing
+		.onFlush("k4", () => { throw Error("some error") })
+		.gzip() //compress stored items
 
 	//print names of the queues in the queue pool
 	console.log(new Date(), `#> queue list:`, QueuePool.getQueuesList()) 

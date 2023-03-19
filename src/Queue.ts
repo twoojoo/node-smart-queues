@@ -1,4 +1,4 @@
-import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, QueueItem, QueueItemParsed, QueueKind, Rules, StorageShiftOutput } from "./types"
+import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueKind, Rules, StorageShiftOutput } from "./types"
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
@@ -33,6 +33,7 @@ export class Queue<T = any> {
 	private globalRules: Rules<T> = {}
 	private keyRules: { [key: string]: Rules<T> } = {}
 
+	private alreadyStartedOnce: boolean = false
 	private firstItemPushed: boolean = false
 	private _gzip: boolean = false
 
@@ -51,10 +52,12 @@ export class Queue<T = any> {
 		if (this._logger) console.log(new Date(), `#> starting queue`, this.name)
 
 		this.paused = false
+
 		if (!this.looping) this.startShiftLoop()
 
 		return this
 	}
+
 
 	/** Pause the queue (pause indefinitely if timer is not provided)
 	 * @param timer - set a timer for the queue restart (calls start() after the timer has expiret)*/
@@ -99,12 +102,36 @@ export class Queue<T = any> {
 		return this.priorities.concat(notPrioritized)
 	}
 
+	private async recover() {
+		if(!this.alreadyStartedOnce) {
+			this.logger && console.log(new Date(), `#> recovering pending items from storage`)
+
+			const storedCount = await this.storage.getStoredCount()
+
+			let recoveryCount = 0
+			const knownKeys = Object.keys(this.keyRules)
+			for (let [key, count] of Object.entries(storedCount)) {
+				if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
+				this.shiftEnabled = true
+				recoveryCount += count
+			}
+
+			this.alreadyStartedOnce = true
+
+			this.logger && console.log(new Date(), `#> recovered ${recoveryCount} items from storage`)
+		}
+	}
+
 	private async startShiftLoop() {
 		this.looping = true
+
+		await this.recover()
+		
 		while (true) {
 			if (this.paused) break
 			const start = Date.now()
 			const oderedKeys = this.calculatePriority()
+
 			if (this.shiftEnabled) {
 				for (let key of oderedKeys) {
 					const keyRules = this.keyRules[key] || {}
@@ -124,6 +151,7 @@ export class Queue<T = any> {
 					}
 
 					const shiftSize = keyRules.shiftSize || 1
+
 					const output: StorageShiftOutput = this.getKeyShiftKind(key) == "FIFO" ?
 						await this.storage.shiftFIFO(key, shiftSize) : 
 						await this.storage.shiftLIFO(key, shiftSize)
@@ -175,55 +203,64 @@ export class Queue<T = any> {
 	 * @param item - item to be pushed in the queue
 	 * @returns true if the item wasn't ignored by the queue
 	 * */
-	async push(key: string, item: T): Promise<boolean> {
-		if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
+	async push(key: string, item: T, options: PushOptions = {}): Promise<PushResult> {
+		try {
+			if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
 
-		//check if the key is to be ignored
-		if (this.keysToIgnore.includes(key)) 
-			return false
+			//check if the key is to be ignored
+			if (this.keysToIgnore.includes(key)) 
+				return { pushed: false, message: `key "${key}" is ignored by the queue` }
 
-		//check if the key is not prioritized and should be skipped
-		if (this.ignoreNotPrioritized) 
-			if (!this.priorities.includes(key))
-				return false
+			//check if the key is not prioritized and should be skipped
+			if (this.ignoreNotPrioritized) 
+				if (!this.priorities.includes(key))
+					return { pushed: false, message: `key "${key}" is not prioritized` }
 
-		this.parseKey(key)
+			this.parseKey(key)
 
-		//check if there is a condition for the item to 
-		//be ignored and calculate the condition result
-		const ignoreItemCondition = 
-			this.keyRules[key].ignoreItemCondition || 
-			this.globalRules.ignoreItemCondition
+			//check if there is a condition for the item to 
+			//be ignored and calculate the condition result
+			const ignoreItemCondition = 
+				this.keyRules[key].ignoreItemCondition || 
+				this.globalRules.ignoreItemCondition
 
-		if (ignoreItemCondition)
-			if (ignoreItemCondition(item))
-				return false
+			if (ignoreItemCondition)
+				if (ignoreItemCondition(item))
+					return { pushed: false, }
 
 
-		const cloneNum = 
-			this.keyRules[key].clonePre ||
-			this.globalRules.clonePre
+			const cloneNum = 
+				this.keyRules[key].clonePre ||
+				this.globalRules.clonePre
 
-		if (cloneNum) {
-			let toBeCloned = true
+			if (cloneNum) {
+				let toBeCloned = true
 
-			const cloneCondition = 
-				this.keyRules[key].clonePreCondition || 
-				this.globalRules.clonePreCondition
+				const cloneCondition = 
+					this.keyRules[key].clonePreCondition || 
+					this.globalRules.clonePreCondition
 
-			if (cloneCondition) 
-				toBeCloned = cloneCondition(item)
+				if (cloneCondition) 
+					toBeCloned = cloneCondition(item)
 
-			if (toBeCloned) {
-				for (let i = 0; i < cloneNum; i++) 
-					await this.pushItemInStorage(key, item)
+				if (toBeCloned) {
+					for (let i = 0; i < cloneNum; i++) 
+						await this.pushItemInStorage(key, item)
+				} else await this.pushItemInStorage(key, item)
+
 			} else await this.pushItemInStorage(key, item)
 
-		} else await this.pushItemInStorage(key, item)
+			this.shiftEnabled = true
 
-		this.shiftEnabled = true
-
-		return true
+			return { pushed: true }
+		} catch (error) {
+			if (options.throwErrors !== false) throw error
+			else return {
+				pushed: false,
+				message: "an error has occurred",
+				error
+			}
+		}
 	}
 
 	/**Push an item to the storage after executin onPush hooks if they exist*/
@@ -412,7 +449,7 @@ export class Queue<T = any> {
 	/**Set a condition for pushed items to be ignored
 	 * @param keys - provide a key (* refers to all keys)
 	 * @param condition - if returns true, the item is ignored*/
-	ignoreItem(key: string, condition: IgnoreItemCondition<T>) {
+	ignoreItems(key: string, condition: IgnoreItemCondition<T>) {
 		this.parseKey(key)
 		this.setRule(key, "ignoreItemCondition", condition)
 		return this
@@ -450,7 +487,7 @@ export class Queue<T = any> {
 	/**register default key rules and return true if key is the global character*/
 	private parseKey(key: string): boolean {
 		if (key == ALL_KEYS_CH) return true
-		if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRulse()
+		if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 		return false
 	}
 
@@ -459,7 +496,8 @@ export class Queue<T = any> {
 		if (key == ALL_KEYS_CH) return this.globalRules.kind
 		if (this.keyRules[key].kind == "FIFO") return "FIFO"
 		if (this.keyRules[key].kind == "LIFO") return "LIFO"
-		return this.globalRules.kind
+		if (this.globalRules.kind) this.globalRules.kind
+		else return "FIFO"
 	}
 
 	private setRule(key: string, rule: string, value: any) {
@@ -468,12 +506,7 @@ export class Queue<T = any> {
 		else this.keyRules[key][rule] = value
 	}
 
-	// private getRule(key: string, rule: string) {
-	// 	if (key != ALL_KEYS_CH) return this.keyRules[key][rule]
-	// 	else return this.globalRules[rule]
-	// }
-
-	private defaultKeyRulse(): Rules<T> {
+	private defaultKeyRules(): Rules<T> {
 		return {}
 	}
 

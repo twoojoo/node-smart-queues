@@ -1,4 +1,4 @@
-import { QueueItem, QueueKind, StorageShiftOutput } from "../types"
+import { QueueItem, QueueKind, StorageShiftOutput, StoredCount } from "../types"
 import { registerNewStorage } from "../pool"
 import { Storage } from "./Storage"
 import fs from "fs"
@@ -84,4 +84,28 @@ export class FileSystemStorage extends Storage {
 			storedCount
 		}
 	}
+
+	 async getStoredCount(): Promise<StoredCount> {
+	 	let storage: any[] = fs
+			.readFileSync(this.file)
+			.toString()
+			.split(LINE_END)
+
+		if (storage[storage.length - 1] == '') storage.splice(storage.length - 1, 1)
+
+		const queueStorage = storage.flatMap(item => {
+			const itemComponents = item.split(SEPARATOR)
+			if (itemComponents[0] == this.name) return [itemComponents]
+			else return []
+		})
+
+	 	const storedCount: StoredCount = {}
+		queueStorage.forEach(itemComponents => {
+			const key = itemComponents[1]
+			if (!storedCount[key]) storedCount[key] = 0
+			storedCount[key]++
+		})
+
+		return storedCount
+	 }
 }
