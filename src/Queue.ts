@@ -94,8 +94,7 @@ export class Queue<T = any> {
 	private calculatePriority(): string[] {
 		const currentKeys = Object.keys(this.keyRules)
 
-		if (this.randomized) 
-			return shuffleArray(currentKeys)
+		if (this.randomized) return shuffleArray(currentKeys)
 		
 		const notPrioritized = currentKeys.filter(key => !this.priorities.includes(key))
 
@@ -108,17 +107,17 @@ export class Queue<T = any> {
 
 			const storedCount = await this.storage.getStoredCount()
 
-			let recoveryCount = 0
+			// let recoveryCount = 0
 			const knownKeys = Object.keys(this.keyRules)
 			for (let [key, count] of Object.entries(storedCount)) {
 				if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
 				this.shiftEnabled = true
-				recoveryCount += count
+				// recoveryCount += count
 			}
 
 			this.alreadyStartedOnce = true
 
-			this.logger && console.log(new Date(), `#> recovered ${recoveryCount} items from storage`)
+			this.logger && console.log(new Date(), `#> recovering done`)
 		}
 	}
 

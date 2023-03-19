@@ -9,7 +9,7 @@ import { Redis } from "ioredis"
 
 	const q = SmartQueue<number>("q1")
 		.logger(true)
-		.redisStorage(redis)
+		.fileSystemStorage("./file.txt")
 		.setDelay("*", 1000)
 		.onFlushAsync("*", (i) => console.log(new Date(), `#>`, i))
 		.gzip()
@@ -21,11 +21,11 @@ import { Redis } from "ioredis"
 	 * - check if the missing items are recovered from the storage
 	 * */
 
-	await q.push("k1", 1)
-	await q.push("k1", 2)
-	await q.push("k1", 3)
-	await q.push("k1", 4)
-	await q.push("k1", 5)
-	await q.push("k2", 6)
-	await q.push("k2", 7)
+	// await q.push("k1", 1)
+	// await q.push("k1", 2)
+	// await q.push("k1", 3)
+	// await q.push("k1", 4)
+	// await q.push("k1", 5)
+	// await q.push("k2", 6)
+	// await q.push("k2", 7)
 })()
