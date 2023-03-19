@@ -1,4 +1,4 @@
-import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueKind, Rules, StorageShiftOutput } from "./types"
+import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueKind, Rules, StorageShiftOutput, StoredCount } from "./types"
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
 import { FileSystemStorage } from "./storage/FileSystem"
 import { MemoryStorage } from "./storage/Memory"
@@ -595,6 +595,10 @@ export class Queue<T = any> {
 		if (this.firstItemPushed) throw Error("cannot set gzip because an item has already been pushed to the queue")
 		this._gzip = true
 		return this
+	}
+
+	async getStorageCount(): Promise<StoredCount> {
+		return await this.storage.getStoredCount()
 	}
 
 	private async gzipItemString(item: string): Promise<Buffer> {

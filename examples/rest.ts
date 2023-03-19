@@ -7,8 +7,8 @@ import { QueuesPool, SmartQueue } from "../src"
 	const q = SmartQueue<number>("q1")
 		.logger(true)
 		.ignoreKeys(["kx"])
+		.setDelay("*", 2000)
 		.onFlushAsync("*", (i) => console.log(new Date(), `#>`, i))
-		.gzip()
 		.start();
 
 	let count = 0
