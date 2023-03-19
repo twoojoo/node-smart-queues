@@ -79,18 +79,52 @@ const queue = SmartQueue<number>("my-queue")
 
 ## HTTP interface
 
+To control all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints.
+
+```typescript
+import { QueuesPool, SmartQueue } from "node-smart-queues"
+import { nsqHttpInterface } from "node-smart-queues-http"
+
+(async function () {
+	await nsqHttpInterface(QueuesPool, {port: 3000, logger: true})
+
+	const q = SmartQueue<string>("q1")
+		.logger(true)
+		.ignoreKeys(["kx"])
+		.onFlushAsync("*", (i) => console.log(new Date(), `#>`, i))
+		.gzip()
+		.start();
+
+	while(true) {
+		await new Promise(r => setTimeout(() => r(0), 1000))
+		await q.push(`k1`, "message")
+	}
+})()
+```
+
+### HTTP commands
+
+A list of the available HTTP commands in curl syntax:
+
 ```bash
+# lists queue in the pool
 curl http://localhost:3000/v1/queue
 
+# tells if a queue exissts or not
 curl http://localhost:3000/v1/queue/<name>/exists
 
+# tells if a queue is paused
 curl http://localhost:3000/v1/queue/<name>/paused
 
+#pauses a queue for n millisecods (or indefinitely if time is not provided)
 curl http://localhost:3000/v1/queue/<name>/pause?time=<ms>
 
+# starts a queue (or restarts it if the queue is paused)
 curl http://localhost:3000/v1/queue/<name>/start
 
+# tells if a key is ignored by a queue
 curl http://localhost:3000/v1/queue/<name>/ignored/<key>
 
+# tells a queue to ignore a list of key (comma separated)
 curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
 ```
