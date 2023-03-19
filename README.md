@@ -107,7 +107,7 @@ import { nsqHttpInterface } from "node-smart-queues-http"
 A list of the available HTTP commands in curl syntax:
 
 ```bash
-# lists queue in the pool
+# lists queue in the pool (comma separated)
 curl http://localhost:3000/v1/queue
 
 # tells if a queue exissts or not
