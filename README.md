@@ -86,7 +86,11 @@ import { QueuesPool, SmartQueue } from "node-smart-queues"
 import { nsqHttpInterface } from "node-smart-queues-http"
 
 (async function () {
-	await nsqHttpInterface(QueuesPool, {port: 3000, logger: true})
+	await nsqHttpInterface(QueuesPool, {
+		host: "localhost", //default: 0.0.0.0
+		port: 3000, //default: 80
+		logger: true //default: false
+	})
 
 	const q = SmartQueue<string>("q1")
 		.onFlushAsync("*", (i) => console.log(i))
