@@ -76,3 +76,21 @@ const queue = SmartQueue<number>("my-queue")
 	.onFlush("my-key", (i) => console.log(i)
 	.start();
 ```
+
+## HTTP interface
+
+```bash
+curl http://localhost:3000/v1/queue
+
+curl http://localhost:3000/v1/queue/<name>/exists
+
+curl http://localhost:3000/v1/queue/<name>/paused
+
+curl http://localhost:3000/v1/queue/<name>/pause?time=<ms>
+
+curl http://localhost:3000/v1/queue/<name>/start
+
+curl http://localhost:3000/v1/queue/<name>/ignored/<key>
+
+curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
+```

@@ -1,5 +1,5 @@
-import { RouteOptions } from "fastify"
 import { QueuePool } from "../src/types";
+import { RouteOptions } from "fastify"
 
 export function getRoutes(pool: QueuePool): RouteOptions[] {
 	return [{
@@ -23,14 +23,16 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			const paused = pool.isQueuePaused((req.params as any).name)
 			rep.send(paused)
 		}
-	}, {
-		method: "GET",
-		url: "/v1/queue/:name/looping",
-		handler: (req, rep) => {
-			const looping = pool.isQueueLooping((req.params as any).name)
-			rep.send(looping)
-		}
-	}, {
+	},
+	// {
+	// 	method: "GET",
+	// 	url: "/v1/queue/:name/looping",
+	// 	handler: (req, rep) => {
+	// 		const looping = pool.isQueueLooping((req.params as any).name)
+	// 		rep.send(looping)
+	// 	}
+	// }, 
+	{
 		method: "GET",
 		url: "/v1/queue/:name/pause",
 		handler: (req, rep) => {
