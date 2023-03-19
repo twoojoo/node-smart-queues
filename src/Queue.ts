@@ -102,7 +102,7 @@ export class Queue<T = any> {
 	}
 
 	private async recover() {
-		if(!this.alreadyStartedOnce) {
+		if (!this.alreadyStartedOnce) {
 			this.logger && console.log(new Date(), `#> recovering pending items from storage`)
 
 			const storedCount = await this.storage.getStoredCount()
@@ -125,66 +125,116 @@ export class Queue<T = any> {
 		this.looping = true
 
 		await this.recover()
-		
-		while (true) {
-			if (this.paused) break
-			const start = Date.now()
-			const oderedKeys = this.calculatePriority()
 
-			if (this.shiftEnabled) {
-				for (let key of oderedKeys) {
-					const keyRules = this.keyRules[key] || {}
+		setInterval(async () => {
+			if (this.paused) return
+			if (!this.shiftEnabled) return
 
-					if (
-						!keyRules.exec &&
-						!keyRules.execAsync && 
-						!this.globalRules.exec &&
-						!this.globalRules.execAsync
-					) continue
+			for (let key of this.calculatePriority()) {
+				const keyRules = this.keyRules[key] || {}
 
-					if (!!keyRules.locked) {
-						const lockSpan = keyRules.every || this.globalRules.every
-						if ((Date.now() - keyRules.lastLockTimestamp) >= lockSpan) {
-							this.unlockKey(key)
-						} else continue
-					}
+				if (
+					!keyRules.exec &&
+					!keyRules.execAsync && 
+					!this.globalRules.exec &&
+					!this.globalRules.execAsync
+				) continue
 
-					const shiftSize = keyRules.shiftSize || 1
-
-					const output: StorageShiftOutput = this.getKeyShiftKind(key) == "FIFO" ?
-						await this.storage.shiftFIFO(key, shiftSize) : 
-						await this.storage.shiftLIFO(key, shiftSize)
-					
-					this.shiftEnabled = false
-					for (let count of Object.values(output.storedCount)) 
-						if (count != 0) 
-							this.shiftEnabled = true
-
-					if (output.items.length != 0) {
-						for (let item of await this.parseItemsPost(key, output.items)) {
-							if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
-								if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item.value, this.keyRules[key].exec)
-								else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item.value, this.keyRules[key].execAsync)
-							} else if (this.globalRules.exec || this.globalRules.execAsync) {
-								if (this.globalRules.exec) this.flushItemFromQueue(key, item.value, this.globalRules.exec)
-								else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item.value, this.globalRules.execAsync)
-							}
-						}
-
-						if (keyRules.every || this.globalRules.every) this.lockKey(key)
-
-						const end = Date.now()
-						const timeSpent = end - start
-						if (timeSpent < this.shiftRate) 
-							await new Promise(r => setTimeout(() => r(0), this.shiftRate - timeSpent))
-
-						break //break every time that something get flushed from the queue in order to recalculate priorities
-					}
+				if (!!keyRules.locked) {
+					const lockSpan = keyRules.every || this.globalRules.every
+					if ((Date.now() - keyRules.lastLockTimestamp) >= lockSpan) {
+						this.unlockKey(key)
+					} else continue
 				}
-			} else await new Promise(r => setTimeout(() => r(0), this.shiftRate || DEFAULT_SHIFT_RATE))
-		}
 
-		this.looping = false
+				const shiftSize = keyRules.shiftSize || 1
+
+				const output: StorageShiftOutput = this.getKeyShiftKind(key) == "FIFO" ?
+					await this.storage.shiftFIFO(key, shiftSize) : 
+					await this.storage.shiftLIFO(key, shiftSize)
+					
+				this.shiftEnabled = false
+				for (let count of Object.values(output.storedCount)) 
+					if (count != 0) 
+						this.shiftEnabled = true
+
+				if (output.items.length != 0) {
+					for (let item of await this.parseItemsPost(key, output.items)) {
+						if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
+							if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item.value, this.keyRules[key].exec)
+							else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item.value, this.keyRules[key].execAsync)
+						} else if (this.globalRules.exec || this.globalRules.execAsync) {
+							if (this.globalRules.exec) this.flushItemFromQueue(key, item.value, this.globalRules.exec)
+							else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item.value, this.globalRules.execAsync)
+						}
+					}
+
+					if (keyRules.every || this.globalRules.every) this.lockKey(key)
+					return //return every time that something get flushed from the queue in order to recalculate priorities
+				}
+			}
+
+		}, this.shiftRate)
+		
+		// while (true) {
+		// 	if (this.paused) break
+		// 	const start = Date.now()
+		// 	const oderedKeys = this.calculatePriority()
+
+		// 	if (this.shiftEnabled) {
+		// 		for (let key of oderedKeys) {
+		// 			const keyRules = this.keyRules[key] || {}
+
+		// 			if (
+		// 				!keyRules.exec &&
+		// 				!keyRules.execAsync && 
+		// 				!this.globalRules.exec &&
+		// 				!this.globalRules.execAsync
+		// 			) continue
+
+		// 			if (!!keyRules.locked) {
+		// 				const lockSpan = keyRules.every || this.globalRules.every
+		// 				if ((Date.now() - keyRules.lastLockTimestamp) >= lockSpan) {
+		// 					this.unlockKey(key)
+		// 				} else continue
+		// 			}
+
+		// 			const shiftSize = keyRules.shiftSize || 1
+
+		// 			const output: StorageShiftOutput = this.getKeyShiftKind(key) == "FIFO" ?
+		// 				await this.storage.shiftFIFO(key, shiftSize) : 
+		// 				await this.storage.shiftLIFO(key, shiftSize)
+					
+		// 			this.shiftEnabled = false
+		// 			for (let count of Object.values(output.storedCount)) 
+		// 				if (count != 0) 
+		// 					this.shiftEnabled = true
+
+		// 			if (output.items.length != 0) {
+		// 				for (let item of await this.parseItemsPost(key, output.items)) {
+		// 					if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
+		// 						if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item.value, this.keyRules[key].exec)
+		// 						else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item.value, this.keyRules[key].execAsync)
+		// 					} else if (this.globalRules.exec || this.globalRules.execAsync) {
+		// 						if (this.globalRules.exec) this.flushItemFromQueue(key, item.value, this.globalRules.exec)
+		// 						else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item.value, this.globalRules.execAsync)
+		// 					}
+		// 				}
+
+		// 				if (keyRules.every || this.globalRules.every) this.lockKey(key)
+
+		// 				const end = Date.now()
+		// 				const timeSpent = end - start
+		// 				if (timeSpent < this.shiftRate) 
+		// 					await new Promise(r => setTimeout(() => r(0), this.shiftRate - timeSpent))
+
+		// 				break //break every time that something get flushed from the queue in order to recalculate priorities
+		// 			}
+		// 		}
+		// 	} else await new Promise(r => setTimeout(() => r(0), this.shiftRate || DEFAULT_SHIFT_RATE))
+		// }
+
+		// this.looping = false
 	}
 
 	private lockKey(key: string) {
