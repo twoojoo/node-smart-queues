@@ -79,7 +79,7 @@ const queue = SmartQueue<number>("my-queue")
 
 ## HTTP interface
 
-To control all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints.
+To interact with all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints.
 
 ```typescript
 import { QueuesPool, SmartQueue } from "node-smart-queues"
