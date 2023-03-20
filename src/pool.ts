@@ -21,7 +21,7 @@ export function registerNewStorage(storage: Storage) {
 
 /**Retrieve the list of quque names from the queues pool.*/
 export function getQueue(pool: QueuePool, name: string): Queue {
-	return pool.find(q => q.getName())
+	return pool.find(q => q.getName() == name)
 }
 
 /**Retrieve the list of quque names from the queues pool.*/

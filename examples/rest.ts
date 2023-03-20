@@ -1,9 +1,9 @@
 import { Redis } from "ioredis";
-import { nsqHttpInterface } from "../interface/server";
+import { setupInterface } from "../interface/server";
 import { QueuesPool, SmartQueue } from "../src"
 
 (async function () {
-	await nsqHttpInterface(QueuesPool, { port: 3000, logger: true })
+	await setupInterface(QueuesPool, { port: 3000, logger: true })
 
 	const redis = new Redis({ host: "localhost", port: 6379 })
 

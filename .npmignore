@@ -4,5 +4,4 @@ src
 examples
 tsconfig
 file.txt
-rest
-cli
+interface

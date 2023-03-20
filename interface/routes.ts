@@ -18,6 +18,7 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		method: "GET",
 		url: "/v1/queue/:name/exists",
 		handler: async (req: any, rep) => {
+			console.log(req.params.name)
 			const exists = !!getQueue(pool, req.params.name)
 			rep.send(exists)
 		}

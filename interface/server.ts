@@ -3,7 +3,7 @@ import { getRoutes } from "./routes"
 import Fastify, {} from "fastify"
 
 export type NsqHttpOptions = {
-	host?: string,
+	// host?: string,
 	port?: number,
 	logger?: boolean
 }
@@ -13,11 +13,11 @@ export type NsqInterfaceConfig = {
 	port: number
 }
 
-export function nsqHttpInterface(pool: QueuePool, options: NsqHttpOptions = {}): Promise<NsqInterfaceConfig> {
+export function setupInterface(pool: QueuePool, options: NsqHttpOptions = {}): Promise<NsqInterfaceConfig> {
 	return new Promise((resolve, reject) => {
 		const nsqServer = Fastify({ logger: false });
 
-		const host = options.host || "0.0.0.0"
+		const host = "0.0.0.0"
 		const port = options.port || 80
 
 		getRoutes(pool)
