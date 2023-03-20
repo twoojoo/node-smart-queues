@@ -1,5 +1,5 @@
 import * as readline from "node:readline/promises"
-// import * as qs from "node:querystring"
+import * as qs from "node:querystring"
 
 const port = parseInt(process.argv[2] || "80")
 if (isNaN(port)) throw Error("port must be a valid number");
@@ -57,22 +57,22 @@ type Command = {
 
 async function testConnection(port: number) {
 	const res = await request("http://0.0.0.0:" + port + "/v1/ping")
-	if (res != "pong") throw Error("an error occurred during connection test")
+	if (await res.text() != "pong") throw Error("an error occurred during connection test")
 } 
 
-async function request(url: string): Promise<string> {
+async function request(url: string): Promise<Response> {
 	const log = console.error
 	try {
 		console.log("\x1b[2mfetching", "'" + url + "'...\x1b[0m")
 		console.error = () => {}
 		const response = await fetch(url)
 		console.error = log
-		return await response.text()
+		return response
 	} catch (err) {
 		console.error = log
-		// console.log(err)
-		console.error("an error occurred")
-		return ""
+		console.log(err)
+		// console.error("an error occurred")
+		// return 
 	}
 }
 
@@ -82,7 +82,7 @@ function commands(url: string): { [name: string]: Command } {
 			description: "gets the names of the queues registered in the pool (comma separated)",
 			usage: "list",
 			action: async (cmd: string[]) => { 
-				const resp = await request(url + "queue")
+				const resp = await (await request(url + "queue")).text()
 				return resp
 			}
 		},
@@ -92,7 +92,7 @@ function commands(url: string): { [name: string]: Command } {
 			action: async (cmd: string[]) => { 
 				const name = cmd[1]
 				if (!name) return "no queue name provided"
-				const resp = await request(url + "queue/" + name + "/exists")
+				const resp = await (await request(url + "queue/" + name + "/exists")).text()
 				return resp
 			}
 		},
@@ -102,7 +102,7 @@ function commands(url: string): { [name: string]: Command } {
 			action: async (cmd: string[]) => {
 				const name = cmd[1]
 				if (!name) return "no queue name provided"
-				const resp = await request(url + "queue/" + name + "/paused")
+				const resp = await (await request(url + "queue/" + name + "/paused")).text()
 				return resp
 			}
 		},
@@ -113,9 +113,9 @@ function commands(url: string): { [name: string]: Command } {
 				const name = cmd[1]
 				const time = cmd[2]
 				if (!name) return "no queue name provided"
-				const resp = time ? 
+				const resp = await (time ? 
 					await request(url + "queue/" + name + "/pause?time=" + time) :
-					await request(url + "queue/" + name + "/pause")
+					await request(url + "queue/" + name + "/pause")).text()
 				return resp
 			}
 		},
@@ -125,7 +125,7 @@ function commands(url: string): { [name: string]: Command } {
 			action: async (cmd: string[]) => {
 				const name = cmd[1]
 				if (!name) return "no queue name provided"
-				const resp = await request(url + "queue/" + name + "/start")
+				const resp = await (await request(url + "queue/" + name + "/start")).text()
 				return resp
 			}
 		},
@@ -137,7 +137,7 @@ function commands(url: string): { [name: string]: Command } {
 				const keys = cmd[2]
 				if (!name) return "no queue name provided"
 				if (!keys) return "no keys provided"
-				const resp = await request(url + "queue/" + name + "/ignore/" + keys)
+				const resp = await (await request(url + "queue/" + name + "/ignore/" + keys)).text()
 				return resp
 			}
 		},
@@ -149,7 +149,7 @@ function commands(url: string): { [name: string]: Command } {
 				const key = cmd[2]
 				if (!name) return "no queue name provided"
 				if (!key) return "no key provided"
-				const resp = await request(url + "queue/" + name + "/key/" + key + "/ignored")
+				const resp = await (await request(url + "queue/" + name + "/key/" + key + "/ignored")).text()
 				return resp
 			}
 		},
@@ -160,9 +160,38 @@ function commands(url: string): { [name: string]: Command } {
 				const name = cmd[1]
 				const key = cmd[2]
 				if (!name) return "no queue name provided"
-				const resp = !key ?
+				const resp = await (!key ?
 					await request(url + "queue/" + name + "/state") :
-					await request(url + "queue/" + name + "/key/" + key + "/state") 
+					await request(url + "queue/" + name + "/key/" + key + "/state")).text()
+				return resp
+			}
+		},
+		mode: {
+			description: "gets the number of pending jobs in a queue for every key (or for a specific key)",
+			usage: "paused <queue-name> <key-name> [optional]",
+			action: async (cmd: string[]) => {
+				const name = cmd[1]
+				const key = cmd[2]
+				if (!name) return "no queue name provided"
+				const resp = await (!key ?
+					await request(url + "queue/" + name + "/mode") :
+					await request(url + "queue/" + name + "/key/" + key + "/mode")).text()
+				return Object.entries(JSON.parse(resp)).map(([name, mode]) => `${name}: ${mode}`).join("\n")
+			}
+		},
+		push: {
+			description: "push an item to a queue with a key",
+			usage: "push <queue-name> <key-name> <item-content> <item-type> [json/string/number (default: string)]",
+			action: async (cmd: string[]) => {
+				const name = cmd[1]
+				const key = cmd[2]
+				const item = cmd[3]
+				const kind = cmd[4]
+				if (!name) return "no queue name provided"
+				if (!key) return "no key provided"
+				if (!kind) console.log("no kind provided (defatul: string)")
+				const queryString = qs.stringify({ item, kind })
+				const resp = await (await request(url + "queue/" + name + "/key/" + key + "/push?" + queryString)).json() 
 				return resp
 			}
 		},

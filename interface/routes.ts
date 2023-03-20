@@ -97,5 +97,22 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			const queue = getQueue(pool, req.params.name)
 			rep.send(queue?.getFlushMode(req.params.key))
 		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/key/:key/push",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			const itemKind = req.query.kind?.toLowerCase()
+
+			const item = itemKind == "json" ? 
+				JSON.parse(req.query.item) :
+				itemKind == "number" ?
+					parseFloat(req.query.item) :
+					req.query.item
+
+			const result = await queue.push(req.params.key, item)
+
+			rep.send(result)
+		}
 	}]
 }

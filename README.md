@@ -131,10 +131,10 @@ curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
 
 ### CLI interface
 
-Allows to control queues via the command line (default host is 0.0.0.0). It requires the HTTP interface to be up and running.
+Allows to control queues both locally or remotely via the command line (default address is *0.0.0.0:80*). It requires the HTTP interface to be up and running.
 
 ```bash
-nsq-cli <host:port>
+nsq-cli <address>
 ```
 
 Type *help* in the cli to get the list of all available commands.

@@ -1,8 +1,11 @@
 {
-  "name": "nsq-rest",
-  "version": "1.0.0",
+  "name": "nsq-http",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "nsq-cli": "node dist/interface/cli.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
