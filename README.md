@@ -79,15 +79,14 @@ const queue = SmartQueue<number>("my-queue")
 
 ## HTTP interface
 
-To interact with all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints.
+To interact with all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
 
 ```typescript
-import { QueuesPool, SmartQueue } from "node-smart-queues"
-import { nsqHttpInterface } from "node-smart-queues-http"
+import { QueuesPool, SmartQueue } from "nsq"
+import { setupInterface } from "nsq-interface"
 
 (async function () {
-	await nsqHttpInterface(QueuesPool, {
-		host: "localhost", //default: 0.0.0.0
+	await setupInterface(QueuesPool, {
 		port: 3000, //default: 80
 		logger: true //default: false
 	})
@@ -103,7 +102,7 @@ import { nsqHttpInterface } from "node-smart-queues-http"
 })()
 ```
 
-### HTTP commands
+### HTTP interface
 
 A list of the available HTTP commands in curl syntax:
 
@@ -128,4 +127,35 @@ curl http://localhost:3000/v1/queue/<name>/ignored/<key>
 
 # tells a queue to ignore a list of key (comma separated)
 curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
+```
+
+### CLI interface
+
+Allows to control queues via the command line (default host is 0.0.0.0). It requires the HTTP interface to be up and running.
+
+```bash
+nsq-cli <host:port>
+```
+
+Type *help* in the cli to get the list of all available commands.
+
+```
+ LIST - gets the names of the queues registered in the pool (comma separated)
+	list
+ EXISTS - tells if a queue exists in the pool(true/false)
+	exists <queue-name>
+ PAUSED - tells if a queue is paused or not
+	paused <queue-name>
+ PAUSE - pauses a queue (optional pause timeout in ms)
+	pause <queue-name>
+ START - starts a queue
+	start <queue-name>
+ IGNORE - commands a queue to ignore a list of keys (comma separated)
+	ignore <queue-name> <key1>,<key2>,<key3>
+ IGNORED - tells if a key is ignored by a queue
+	paused <queue-name> <key-name>
+ STATE - gets the number of pending jobs in a queue for every key (or for a specific key)
+	paused <queue-name> <key-name> [optional]
+ EXIT - exit the cli
+	exit
 ```
