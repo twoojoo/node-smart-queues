@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { nsqHttpInterface } from "../rest";
+import { nsqHttpInterface } from "../interface/server";
 import { QueuesPool, SmartQueue } from "../src"
 
 (async function () {

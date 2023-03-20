@@ -49,7 +49,7 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		}
 	}, {
 		method: "GET",
-		url: "/v1/queue/:name/ignored/:key",
+		url: "/v1/queue/:name/key/:key/ignored",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
 			rep.send(queue.isKeyIgnored(req.params.key))
@@ -76,13 +76,25 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		}
 	}, {
 		method: "GET",
-		url: "/v1/queue/:name/state/:key",
+		url: "/v1/queue/:name/key/:key/state",
 		handler: async (req: any, rep) => {
-			const name = (req.params as any).name
-			const key = (req.params as any).key
 			const queue = getQueue(pool, req.params.name)
 			const storedCount = await queue?.getStorageCount()
-			rep.send(storedCount[key])
+			rep.send(storedCount[req.params.key])
+		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/mode",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			rep.send(queue?.getFlushMode())
+		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/key/:key/mode",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			rep.send(queue?.getFlushMode(req.params.key))
 		}
 	}]
 }

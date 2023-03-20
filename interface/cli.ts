@@ -23,16 +23,19 @@ const rl = readline.createInterface({
 				resp = await request(v1URL + "queue")
 				console.log(resp)
 				break
+
 			case "exists": 
 				name = cmd[1]
 				resp = await request(v1URL + `queue/${name}/exists`)
 				console.log(resp)
 				break
+
 			case "paused":
 				name = cmd[1]
 				resp = await request(v1URL + `queue/${name}/paused`)
 				console.log(resp)
 				break
+
 			case "pause":
 				name = cmd[1]
 				const time = parseInt(cmd[2])
@@ -40,32 +43,49 @@ const rl = readline.createInterface({
 				resp = await request(v1URL + `queue/${name}/pause?${query}`)
 				console.log(resp)
 				break
+
 			case "start":
 				name = cmd[1]
 				resp = await request(v1URL + `queue/${name}/start`)
 				console.log(resp)
 				break
+
 			case "ignored":
 				name = cmd[1]
 				const ignoredKey = cmd[4]
 				resp = await request(v1URL + `queue/${name}/ignored/${ignoredKey}`)
 				console.log(resp)
 				break
+
 			case "ignore":
 				name = cmd[1]
 				const keyToIgnore = cmd[2]
 				resp = await request(v1URL + `queue/${name}/ignore/${keyToIgnore}`)
 				console.log(resp)
 				break
+
 			case "state":
 				name = cmd[1]
-				const keyToInspect = cmd[4]
-				if (keyToInspect) resp = await request(v1URL + `queue/${name}/state/${keyToInspect}`)
+				const stateKey = cmd[2]
+				if (stateKey) resp = await request(v1URL + `queue/${name}/state/${stateKey}`)
 				else resp = await request(v1URL + `queue/${name}/state`)
 				console.log(resp)
 				break
+
+			case "mode":
+				name = cmd[1]
+				const modeKey = cmd[2]
+				if (modeKey) resp = await request(v1URL + `queue/${name}/mode/${modeKey}`)
+				else resp = await request(v1URL + `queue/${name}/mode`)
+				console.log(resp)
+				break
+
 			case "exit":
 				process.exit(0)
+
+			default:
+				console.log("unknown command:", cmd[0])
+				break
 		}
 	}
 })()
@@ -77,6 +97,7 @@ async function testConnection(port: number) {
 
 async function request(url: string): Promise<string> {
 	try {
+		console.log(url)
 		const log = console.error
 		console.error = () => {}
 		const response = await fetch(url)
