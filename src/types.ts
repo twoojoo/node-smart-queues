@@ -1,15 +1,6 @@
 import { Queue } from "./Queue"
 
-export type QueuePool = {
-	queues: Queue<any>[],
-	getQueuesList: () => string[],
-	queueExists: (name: string) => boolean,
-	getQueue: (name: string) => Queue,
-	isQueueLooping: (name: string) => boolean,
-	isQueuePaused: (name: string) => boolean,
-	isQueueKeyIgnored: (name: string, key: string) => boolean,
-	[x: string]: any
-}
+export type QueuePool = Queue<any>[]
 
 export type QueueKind = "LIFO" | "FIFO"
 
@@ -52,7 +43,7 @@ export type PushOptions = {
 	throwErrors?: boolean
 }
 
-export type PushResult= {
+export type PushResult = {
 	pushed: boolean
 	message?: string
 	error?: Error
