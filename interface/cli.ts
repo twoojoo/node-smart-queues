@@ -36,7 +36,7 @@ type Command = {
 			if (!cmd[1]) {
 				console.log()
 				const output = Object.entries(commands(url)).map(([name, prop]) => {
-					return ` ${name.toUpperCase()} - ${prop.description}`
+					return ` ${name.toUpperCase()} - ${prop.description}\n\t\x1b[2m${prop.usage}\x1b[0m`
 				}).join("\n")
 				console.log(output)
 				console.log()
