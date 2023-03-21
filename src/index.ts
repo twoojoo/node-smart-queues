@@ -1,3 +1,4 @@
-export { SmartQueue } from "./Queue"
+export { Queue } from "./Queue"
 export { QueuesPool } from "./pool"
-export { ExecCallback, CloneCondition, PriorityOptions } from "./types"
+export { ExecCallback, PriorityOptions } from "./types"
+export * from "./storage"

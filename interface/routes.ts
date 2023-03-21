@@ -88,14 +88,14 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		url: "/v1/queue/:name/mode",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
-			rep.send(queue?.getFlushMode())
+			rep.send(queue?.getPopMode())
 		}
 	}, {
 		method: "GET",
 		url: "/v1/queue/:name/key/:key/mode",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
-			rep.send(queue?.getFlushMode(req.params.key))
+			rep.send(queue?.getPopMode(req.params.key))
 		}
 	}, {
 		method: "GET",
@@ -113,6 +113,30 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			const result = await queue.push(req.params.key, item)
 
 			rep.send(result)
+		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/delay",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			if (!req.query.time) rep.status(400).send("time required")
+			const time = parseInt(req.query.time)
+			if (isNaN(time)) rep.status(400).send("time must be a valid number")
+			queue.setDelay("*", time)
+			rep.send()
+		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/key/:key/delay",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			const key = req.params.key
+			if (!key) rep.status(400).send("key required")
+			if (!req.query.time) rep.status(400).send("time required")
+			const time = parseInt(req.query.time)
+			if (isNaN(time)) rep.status(400).send("time must be a valid number")
+			queue.setDelay(key, time)
+			rep.send()
 		}
 	}]
 }

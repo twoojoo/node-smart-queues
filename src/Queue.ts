@@ -1,60 +1,170 @@
-import { CloneCondition, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueKind, Rules, StorageShiftOutput, StoredCount } from "./types"
+import { CallbackOptions, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueMode, QueueStaticOptions, Rules, StoredCount } from "./types"
 import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
-import { FileSystemStorage } from "./storage/FileSystem"
-import { MemoryStorage } from "./storage/Memory"
-import { RedisStorage } from "./storage/Redis"
+import { inMemoryStorage } from "./storage"
 import { Storage } from "./storage/Storage"
 import { registerNewQueue } from "./pool"
 import { gzip, ungzip } from "node-gzip"
 import { shuffleArray } from "./utils"
-import { Redis } from "ioredis"
-
-/**Init a Queue (FIFO by default, in Memory by default)
- * @param name - provide a unique name for the queue*/
-export function SmartQueue<T = any>(name: string) {
-	return new Queue<T>(name)
-}
 
 export class Queue<T = any> {
-	private storage: Storage
-	private _logger: boolean = false
-	private name: string
-	private shiftRate: number = 1000 / DEFAULT_SHIFT_RATE
+	// static options
+	private storage: Storage = undefined
+	private loopRate: number = 1000 / DEFAULT_SHIFT_RATE
+	private gzip: boolean = false
+	private logger: boolean = true
 
+	// dynamic options
+	private name: string
+
+	// loop control
+	private alreadyStartedOnce: boolean = false
+	private mainInterval: NodeJS.Timer = undefined 
 	private looping: boolean = false
 	private paused: boolean = false
-	private shiftEnabled = false
+	private loopLocked: boolean = true
 
+	// priority / ignore
 	private priorities: string[] = []
 	private randomized: boolean = false
 	private ignoreNotPrioritized: boolean = false
 	private keysToIgnore: string[] = []
 
+	// rules
 	private globalRules: Rules<T> = {}
 	private keyRules: { [key: string]: Rules<T> } = {}
 
-	private alreadyStartedOnce: boolean = false
-	private firstItemPushed: boolean = false
-	private _gzip: boolean = false
-
-	private mainInterval: NodeJS.Timer = undefined 
-
-	constructor(name: string) {
+	constructor(name: string, options: QueueStaticOptions = {}) {
 		this.name = name
-		this.storage = new MemoryStorage(name)	
+		this.storage = options?.storage?.(name) || inMemoryStorage()(name)
+		this.gzip = options.gzip || false
+		this.loopRate = (options.loopRate || DEFAULT_SHIFT_RATE) / 1000
 		registerNewQueue(this)
 	}
 
+	/// STATIC PROPERTIES
+	
 	/**Returns the name of the queue*/
-	getName() {
-		return this.name
+	getName() { return this.name }
+
+	// LOOP CONTROL
+
+	/** ignoreNotPrioritized affects pushed item only */
+	private calculatePriority(): string[] {
+		const knownKeys = Object.keys(this.keyRules)
+		if (this.randomized) return shuffleArray(knownKeys)
+		const notPrioritized = knownKeys.filter(key => !this.priorities.includes(key))
+		return this.priorities.concat(notPrioritized) 
+	}
+
+	/**Look in the storage for keys that still have some pending items*/
+	private async recover() {
+		if (!this.alreadyStartedOnce) { //only the first time
+			this.log(`recovering pending items from storage`)
+
+			const storedCount = await this.storage.getStoredCount()
+
+			let recoverCount = 0
+			const knownKeys = Object.keys(this.keyRules)
+			for (let [key, count] of Object.entries(storedCount)) {
+				if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
+				this.loopLocked = false
+				recoverCount += count
+			}
+
+			this.alreadyStartedOnce = true
+			this.log(`recovered ${recoverCount} items from storage`)
+		}
+	}
+
+	private async startLoop() {
+		if (this.looping) return
+		this.looping = true
+
+		clearInterval(this.mainInterval)
+
+		await this.recover()
+
+		this.mainInterval = setInterval(async () => {
+			const start = Date.now()
+
+			if (this.paused) {
+				clearInterval(this.mainInterval)
+				return
+			}
+
+			if (this.loopLocked) return
+			//kill any other interval callback while
+			//the current one is active
+			this.loopLocked = true
+
+			for (const key of this.calculatePriority()) {
+				const keyRules = this.keyRules[key] || {}
+
+				//skip the key if a pop callback is not provided 
+				//(maybe remove this feature and just pop)
+				if (!keyRules.onPop && !this.globalRules.onPop) continue
+
+				//if the key is locked (due to delay) check if the delay is expired.
+				//If so unlock key and go on, else coninue to the next key
+				if (keyRules.locked) {
+					const delaySize = keyRules.delay || this.globalRules.delay
+					if ((Date.now() - keyRules.lastLockTimestamp) >= delaySize) this.unlockKey(key)
+					else continue
+				}
+
+				//get the number of items to pop
+				const popSize = keyRules.popSize || this.globalRules.popSize || 1
+
+				//pop items
+				const items = this.getPopModeIternal(key) == "FIFO" ?
+					await this.storage.popRight(key, popSize) : 
+					await this.storage.popLeft(key, popSize)
+
+				if (items.length > 0) {
+					if (keyRules.delay || this.globalRules.delay) this.lockKey(key)
+
+					for (let item of items) {
+						const pItem = await this.parseQueueItem(item)
+						// get the correct calòback to execute (and if must be awaited or not)
+						if (keyRules.onPop && !keyRules.onPopAwait) this.popItemFromQueue(key, pItem.value, keyRules.onPop, start)
+						else if (keyRules.onPop && keyRules.onPopAwait) await this.popItemFromQueue(key, pItem.value, keyRules.onPop, start)
+						else if (this.globalRules.onPop && !this.globalRules.onPopAwait) await this.popItemFromQueue(key, pItem.value, this.globalRules.onPop, start)
+						else if (this.globalRules.onPop && this.globalRules.onPopAwait) this.popItemFromQueue(key, pItem.value, this.globalRules.onPop, start)
+					}
+
+					// unlock the loop only if there the 
+					// queue is completely empty
+					const storedCount = await this.getStorageCount();
+					for (let count of Object.values(storedCount)) {
+						if (count != 0) this.loopLocked = false
+					}
+ 
+					//break the loop any time something is popped
+					//to force a priorities recalculation
+					break
+				}
+			}
+		}, this.loopRate)
+		this.looping = false
+	}
+
+	/**make the loop skip a key*/
+	private lockKey(key: string) {
+		this.keyRules[key].locked = true
+		this.keyRules[key].lastLockTimestamp = Date.now()
+	}
+
+	/**remove the key lock*/
+	private unlockKey(key: string) {
+		this.keyRules[key].locked = false
+		this.keyRules[key].lastLockTimestamp = undefined
 	}
 
 	/**Starts the queue*/
 	start() {
-		if (this._logger) console.log(new Date(), `#> starting queue`, this.name)
+		this.log(`starting queue`, this.name)
 		this.paused = false
-		if (!this.looping) this.startShiftLoop()
+		if (!this.looping) this.startLoop()
 		return this
 	}
 
@@ -62,7 +172,7 @@ export class Queue<T = any> {
 	/** Pause the queue (pause indefinitely if timer is not provided)
 	 * @param timer - set a timer for the queue restart (calls start() after the timer has expiret)*/
 	pause(timer?: number) {
-		if (this._logger) console.log(new Date(), `#> pausing queue`, this.name, timer ? `for ${timer}ms` : "indefinitely")
+		this.log(`pausing queue`, this.name, timer ? `for ${timer}ms` : "indefinitely")
 
 		this.paused = true
 		this.looping = false
@@ -71,123 +181,16 @@ export class Queue<T = any> {
 		return this
 	}
 
+	/// CALLBACKS
+
 	/**Set a callback to be executed syncronously (awaited if async) when pushing items for a specific key
 	* @param key - provide a key (* refers to all keys)
 	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
-	onPush(key: string, callback: OnPushCallback<T>) {
+	onPush(key: string, callback: OnPushCallback<T>, options: CallbackOptions) {
 		this.parseKey(key)
 		this.setRule(key, "onPushAsync", undefined)
 		this.setRule(key, "onPush", callback)
 		return this
-	}
-
-	/**Set a callback to be executed asyncronously (not awaited if async) when pushing items for a specific key
-	* @param key - provide a key (* refers to all keys)
-	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
-	onPushAsync(key: string, callback: OnPushCallback<T>) {
-		this.parseKey(key)
-		this.setRule(key, "onPush", undefined)
-		this.setRule(key, "onPushAsync", callback)
-		return this
-	}
-
-	private calculatePriority(): string[] {
-		const currentKeys = Object.keys(this.keyRules)
-		if (this.randomized) return shuffleArray(currentKeys)
-		const notPrioritized = currentKeys.filter(key => !this.priorities.includes(key))
-		return this.priorities.concat(notPrioritized)
-	}
-
-	private async recover() {
-		if (!this.alreadyStartedOnce) {
-			this.logger && console.log(new Date(), `#> recovering pending items from storage`)
-
-			const storedCount = await this.storage.getStoredCount()
-
-			let recoverCount = 0
-			const knownKeys = Object.keys(this.keyRules)
-			for (let [key, count] of Object.entries(storedCount)) {
-				if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
-				this.shiftEnabled = true
-				recoverCount += count
-			}
-
-			this.alreadyStartedOnce = true
-
-			this.logger && console.log(new Date(), `#> recovered ${recoverCount} items from storage`)
-		}
-	}
-
-	private async startShiftLoop() {
-		if (this.looping) return
-
-		this.looping = true
-		clearInterval(this.mainInterval)
-		await this.recover()
-
-		this.mainInterval = setInterval(async () => {
-			const start = Date.now()
-
-			if (this.paused || !this.shiftEnabled) {
-				this.looping = false
-				clearInterval(this.mainInterval)
-				return
-			}
-
-			for (let key of this.calculatePriority()) {
-				const keyRules = this.keyRules[key] || {}
-
-				if (
-					!keyRules.exec &&
-					!keyRules.execAsync && 
-					!this.globalRules.exec &&
-					!this.globalRules.execAsync
-				) continue
-
-				if (!!keyRules.locked) {
-					const lockSpan = keyRules.every || this.globalRules.every
-					if ((Date.now() - keyRules.lastLockTimestamp) >= lockSpan) {
-						this.unlockKey(key)
-					} else continue
-				}
-
-				const shiftSize = keyRules.shiftSize || 1
-
-				const output: StorageShiftOutput = this.getKeyShiftKind(key) == "FIFO" ?
-					await this.storage.shiftFIFO(key, shiftSize) : 
-					await this.storage.shiftLIFO(key, shiftSize)
-					
-				this.shiftEnabled = false
-				for (let count of Object.values(output.storedCount)) 
-					if (count != 0) 
-						this.shiftEnabled = true
-
-				if (output.items.length != 0) {
-					for (let item of await this.parseItemsPost(key, output.items)) {
-						if (this.keyRules[key].exec || this.keyRules[key].execAsync) {
-							if (this.keyRules[key].exec) await this.flushItemFromQueue(key, item.value, this.keyRules[key].exec, start)
-							else if (this.keyRules[key].execAsync) this.flushItemFromQueue(key, item.value, this.keyRules[key].execAsync, start)
-						} else if (this.globalRules.exec || this.globalRules.execAsync) {
-							if (this.globalRules.exec) await this.flushItemFromQueue(key, item.value, this.globalRules.exec, start)
-							else if (this.globalRules.execAsync) this.flushItemFromQueue(key, item.value, this.globalRules.execAsync, start)
-						}
-					}
-
-					if (keyRules.every || this.globalRules.every) this.lockKey(key)
-					break //return every time that something get flushed from the queue in order to recalculate priorities
-				}
-			}
-		}, this.shiftRate)
-	}
-
-	private lockKey(key: string) {
-		this.keyRules[key].locked = true
-		this.keyRules[key].lastLockTimestamp = Date.now()
-	}
-
-	private unlockKey(key: string) {
-		this.keyRules[key].locked = false
-		this.keyRules[key].lastLockTimestamp = undefined
 	}
 
 	/**Push an item in the queue for a certain key
@@ -198,6 +201,7 @@ export class Queue<T = any> {
 	async push(key: string, item: T, options: PushOptions = {}): Promise<PushResult> {
 		try {
 			const pushTimestamp = Date.now()
+
 			if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
 
 			//check if the key is to be ignored
@@ -221,31 +225,12 @@ export class Queue<T = any> {
 				if (ignoreItemCondition(item))
 					return { pushed: false, }
 
+			 await this.pushItemInStorage(key, item, pushTimestamp)
 
-			const cloneNum = 
-				this.keyRules[key].clonePre ||
-				this.globalRules.clonePre
-
-			if (cloneNum) {
-				let toBeCloned = true
-
-				const cloneCondition = 
-					this.keyRules[key].clonePreCondition || 
-					this.globalRules.clonePreCondition
-
-				if (cloneCondition) 
-					toBeCloned = cloneCondition(item)
-
-				if (toBeCloned) {
-					for (let i = 0; i < cloneNum; i++) 
-						await this.pushItemInStorage(key, item, pushTimestamp)
-				} else await this.pushItemInStorage(key, item, pushTimestamp)
-
-			} else await this.pushItemInStorage(key, item, pushTimestamp)
-
-			this.shiftEnabled = true
-			this.startShiftLoop()
+			this.loopLocked = false
+			this.startLoop()
 			return { pushed: true }
+
 		} catch (error) {
 			if (options.throwErrors !== false) throw error
 			else return {
@@ -263,19 +248,17 @@ export class Queue<T = any> {
 		else if (this.globalRules.onPush) await this.globalRules.onPush(item, key, this)
 		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item, key, this)
 
-		this.firstItemPushed = true
-
 		this.storage.push(key, {
 			pushTimestamp,
-			value: this._gzip ?
+			value: this.gzip ?
 				await this.gzipItemString(JSON.stringify(item)) : 
 				Buffer.from(JSON.stringify(item))
 		})
 
-		if (this._logger) console.log(new Date(), `#> pushed item - queue: ${this.name} - key: ${key} [${Date.now() - pushTimestamp}ms]`)
+		this.log(`pushed item - queue: ${this.name} - key: ${key} [${Date.now() - pushTimestamp}ms]`)
 	}
 
-	private async flushItemFromQueue(key: string, item: T, callback: ExecCallback<T>, start: number) {
+	private async popItemFromQueue(key: string, item: T, callback: ExecCallback<T>, start: number) {
 
 		const maxRetry = 
 			this.keyRules[key].maxRetry || 
@@ -302,11 +285,11 @@ export class Queue<T = any> {
 		let retryCount = 0
 		while (retryCount < maxRetry) {
 			try {
-				if (this._logger) console.log(new Date(), `#> flushed item - queue: ${this.name} - key: ${key} [${Date.now() - start}ms]`)
+				this.log(`flushed item - queue: ${this.name} - key: ${key} [${Date.now() - start}ms]`)
 				await callback(item, key, this)
 				break
 			} catch (error) {
-				if (this._logger && retryCount > 0) console.log(new Date(), `#> retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
+				if (retryCount > 0) this.log(`retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
 				retryCount++
 				if (retryCount >= maxRetry) {
 					if (isMaxRetryCallbackAsync) onMaxRetryCallback(error, item, key, this)
@@ -321,7 +304,7 @@ export class Queue<T = any> {
 	 * @param key - provide a key (* refers to all keys)*/
 	setFIFO(key: string = "*") {
 		this.parseKey(key)
-		this.setRule(key, "kind", "FIFO")
+		this.setRule(key, "mode", "FIFO")
 		return this
 	}
 
@@ -329,7 +312,7 @@ export class Queue<T = any> {
 	 * @param key - provide a key (* refers to all keys)*/
 	setLIFO(key: string = "*") {
 		this.parseKey(key)
-		this.setRule(key, "kind", "LIFO")
+		this.setRule(key, "mode", "LIFO")
 		return this
 	}
 
@@ -352,29 +335,20 @@ export class Queue<T = any> {
 	/**Set a callback to be executed syncronously (awaited if async) when flushing items for a specific key
 	* @param key - provide a key (* refers to all keys)
 	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
-	onFlush(key: string, callback: ExecCallback<T>) {
+	onPop(key: string, callback: ExecCallback<T>, options: CallbackOptions = {}) {
 		this.parseKey(key)
-		this.setRule(key, "execAsync", undefined)
-		this.setRule(key, "exec", callback)
-		return this
-	}
-
-	/**Set a callback to be executed asyncronously (not awaited if async) when flushing items for a specific key
-	* @param key - provide a key (* refers to all keys)
-	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
-	onFlushAsync(key: string, callback: ExecCallback<T>) {
-		this.parseKey(key)
-		this.setRule(key, "exec", undefined)
-		this.setRule(key, "execAsync", callback)
+		this.setRule(key, "onPop", callback)
+		this.setRule(key, "onPopAwait", options.awaited === false ? false : true)
 		return this
 	}
 
 	/**Set the number of items to flush at one time (the exec calback is called once for each item separately)
 	* @param key - provide a key (* refers to all keys)
 	* @param size - flush size*/
-	flushSize(key: string, size: number) {
+	popSize(key: string, size: number) {
 		this.parseKey(key)
-		this.setRule(key, "shiftSize", size)
+		this.setRule(key, "popSize", size)
+		this.log(`set pop size: ${size} - queue ${this.name}`, key == ALL_KEYS_CH ? "" : `- key ${key}`)
 		return this
 	}
 
@@ -383,27 +357,8 @@ export class Queue<T = any> {
 	* @param delay - milliseconds*/
 	setDelay(key: string, delay: number) {
 		this.parseKey(key)
-		this.setRule(key, "every", delay)
-		return this
-	}
-
-	/**Clone items of a specific key n times when pushing them from the queue
-	 * @param key - provide a key (* refers to all keys)
-	 * @param count - provide the number of clones*/
-	clonePre(key: string, count: number, condition?: CloneCondition<T>) {
-		this.parseKey(key)
-		this.setRule(key, "clonePre", count)
-		this.setRule(key, "clonePreCondition", condition)
-		return this
-	}
-
-	/**Clone items of a specific key n times when flushing them from the queue
-	 * @param key - provide a key (* refers to all keys)
-	 * @param count - provide the number of clones*/
-	clonePost(key: string, count: number, condition?: CloneCondition<T>) {
-		this.parseKey(key)
-		this.setRule(key, "clonePost", count)
-		this.setRule(key, "clonePostCondition", condition)
+		this.setRule(key, "delay", delay)
+		this.log(`${delay}ms delay set - queue ${this.name}`, key == ALL_KEYS_CH ? "" : `- key ${key}`)
 		return this
 	}
 
@@ -484,11 +439,11 @@ export class Queue<T = any> {
 	}
 
 	/**Key kind overrides queue kind*/
-	private getKeyShiftKind(key: string): QueueKind {
-		if (key == ALL_KEYS_CH) return this.globalRules.kind
-		if (this.keyRules[key].kind == "FIFO") return "FIFO"
-		if (this.keyRules[key].kind == "LIFO") return "LIFO"
-		if (this.globalRules.kind) this.globalRules.kind
+	private getPopModeIternal(key: string): QueueMode {
+		if (key == ALL_KEYS_CH) return this.globalRules.mode
+		if (this.keyRules[key].mode == "FIFO") return "FIFO"
+		if (this.keyRules[key].mode == "LIFO") return "LIFO"
+		if (this.globalRules.mode) this.globalRules.mode
 		else return "FIFO"
 	}
 
@@ -502,92 +457,15 @@ export class Queue<T = any> {
 		return {}
 	}
 
-	/**Clones items if a clonePost rule is provided for the key or as a global rule*/
-	private async parseItemsPost(key: string, items: QueueItem[]): Promise<QueueItemParsed<T>[]> {
-		let clonesNum: number
-		let cloneCondition: CloneCondition<T>
-
-		if (this.keyRules[key].clonePost) {
-			clonesNum = this.keyRules[key].clonePost
-			cloneCondition = this.keyRules[key].clonePostCondition
-		} else if (this.globalRules.clonePost) {
-			clonesNum = this.globalRules.clonePost
-			cloneCondition = this.globalRules.clonePostCondition
-		}
-
-		const parsedItems: QueueItemParsed<T>[] = []
-
-		for (let item of items) 
-			parsedItems.push(await this.parseQueueItem(item))
-		
-
-		if (!clonesNum) return parsedItems
-		else return parsedItems.flatMap(i => {
-			const toBeCloned = cloneCondition ? cloneCondition(i.value) : true
-			if (toBeCloned) {
-				const clonedItems = []
-
-				for (let j = 0; j < clonesNum; j++) 
-					clonedItems.push(i)
-
-				return clonedItems
-			} else return [i]
-		})
-	}
-
 	/**Tells if the queue is paused*/
 	isPaused(): boolean {
 		return this.paused
 	}
 
-
 	/**Tells if a key is ignored by the queue*/
 	isKeyIgnored(key: string): boolean {
 		if (key == ALL_KEYS_CH) throw Error("* refers to all keys and cannot be used here")
 		return !!this.keysToIgnore.includes(key)
-	}
-
-	/**Tells if the queue is looping*/
-	isLooping(): boolean {
-		return this.looping
-	}
-
-	/**Set a FS storage
-	 * @param file - provide the path to the storage file (can be the same accross different queues)*/
-	fileSystemStorage(file: string) {
-		this.storage = new FileSystemStorage(this.name, file)
-		return this
-	}
-
-	/**Set a Redis storage
-	 * @param redis - provide an ioredis client*/
-	redisStorage(redis: Redis) {
-		this.storage = new RedisStorage(this.name, redis)
-		return this
-	}
-
-	/**Set an in Memory storage (default)*/
-	inMemoryStorage() {
-		this.storage = new MemoryStorage(this.name)
-		return this
-	}
-
-	logger(enabled: boolean) {
-		this._logger = enabled
-		return this
-	}
-
-	setFlushRate(rate: number) {
-		this.shiftRate = 1000 / rate
-		return this
-	}
-
-	/**Enable items gzipping before pushing them to the storage (disabled by default). 
-	 * It's not allowed to set gzipping if the first item has already been pushed to the queue.*/
-	gzip() {
-		if (this.firstItemPushed) throw Error("cannot set gzip because an item has already been pushed to the queue")
-		this._gzip = true
-		return this
 	}
 
 	async getStorageCount(): Promise<StoredCount> {
@@ -608,7 +486,7 @@ export class Queue<T = any> {
 
 		try {
 			let toBeParsed
-			if (this._gzip) toBeParsed = await this.ungzipItemString(item.value)
+			if (this.gzip) toBeParsed = await this.ungzipItemString(item.value)
 			parsedItem.value = JSON.parse(toBeParsed)
 			return parsedItem
 		} catch (err) {
@@ -619,13 +497,27 @@ export class Queue<T = any> {
 		}
 	} 
 
-	getFlushMode(key: string = ALL_KEYS_CH): QueueKind {
+	getPopMode(key: string = ALL_KEYS_CH): { [key: string]: QueueMode } | QueueMode {
 		if (key == ALL_KEYS_CH) {
-			if (this.globalRules.kind) return this.globalRules.kind
+			const modeByKey: { [key: string]: QueueMode } = {}
+
+			const defaultMode = this.globalRules.mode || "FIFO"
+
+			for (const [key, values] of Object.entries(this.keyRules)) {
+				modeByKey[key] = values.mode || defaultMode
+			}
+
+			modeByKey["*"] = defaultMode
+
+			return modeByKey
 		} else {
-			if (this.keyRules[key]?.kind) return this.keyRules[key]?.kind
-			if (this.globalRules.kind) return this.globalRules.kind
+			if (this.keyRules[key]?.mode) return this.keyRules[key]?.mode
+			if (this.globalRules.mode) return this.globalRules.mode
+			return "FIFO"
 		}
-		return "FIFO"
+	}
+
+	log(...args: any[]) {
+		if (this.logger) console.log(new Date(), `#>`, ...args)
 	}
 }

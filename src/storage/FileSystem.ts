@@ -1,5 +1,4 @@
-import { QueueItem, QueueKind, StorageShiftOutput, StoredCount } from "../types"
-import { registerNewStorage } from "../pool"
+import { QueueItem, QueueMode, StoredCount } from "../types"
 import { Storage } from "./Storage"
 import fs from "fs"
 
@@ -14,22 +13,21 @@ export class FileSystemStorage extends Storage {
 		this.file = file
 		const fileExists = fs.existsSync(file)
 		if (!fileExists) fs.writeFileSync(file, "")
-		registerNewStorage(this)
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {
 		fs.appendFileSync(this.file, this.name + SEPARATOR + key + SEPARATOR + item.pushTimestamp + SEPARATOR + JSON.stringify(item.value) + LINE_END)
 	}
 
-	async shiftFIFO(key: string, count: number): Promise<StorageShiftOutput> {
-		return this.shift("FIFO", key, count)
+	async popRight(key: string, count: number): Promise<QueueItem[]> {
+		return this.pop("FIFO", key, count)
 	}
 
-	async shiftLIFO(key: string, count: number): Promise<StorageShiftOutput> {
-		return this.shift("LIFO", key, count)
+	async popLeft(key: string, count: number): Promise<QueueItem[]> {
+		return this.pop("LIFO", key, count)
 	}
 
-	async shift(kind: QueueKind, key: string, count: number): Promise<StorageShiftOutput> {
+	async pop(kind: QueueMode, key: string, count: number): Promise<QueueItem[]> {
 		let storage: any[] = fs
 			.readFileSync(this.file)
 			.toString()
@@ -45,15 +43,7 @@ export class FileSystemStorage extends Storage {
 			else return []
 		})
 
-		const storedCount = {}
-		queueStorage.forEach(itemComponents => {
-			const key = itemComponents[1]
-			if (!storedCount[key]) storedCount[key] = 0
-			storedCount[key]++
-		})
-
-		const keyStorage = queueStorage
-			.filter(item => item[1] == key)
+		const keyStorage = queueStorage.filter(item => item[1] == key)
 
 		const keyStorageJoined = keyStorage.map(i => i.join(SEPARATOR))
 		const newStorage = globalStorage.flatMap((item) => {
@@ -79,10 +69,7 @@ export class FileSystemStorage extends Storage {
 		if (newStorage[storage.length - 1] == '') newStorage.splice(newStorage.length - 1, 1)
 		fs.writeFileSync(this.file, newStorage.join(""))
 
-		return {
-			items,
-			storedCount
-		}
+		return items
 	}
 
 	 async getStoredCount(): Promise<StoredCount> {

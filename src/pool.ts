@@ -1,9 +1,7 @@
-import { Storage } from "./storage/Storage"
 import { Queue } from "./Queue"
 import { QueuePool } from "./types"
 
 export const QueuesPool: QueuePool = []
-const storages: Storage[] = []
 
 /**Collects all queues. 
 * Checks if queue names are unique before registering a new name (throw an error if the name already exists). */
@@ -14,12 +12,7 @@ export function registerNewQueue(queue: Queue) {
 	QueuesPool.push(queue)
 }
 
-/**Collects all storages*/
-export function registerNewStorage(storage: Storage) {
-	storages.push(storage)
-}
-
-/**Retrieve the list of quque names from the queues pool.*/
+/**Retrieve the list of queue names from the queues pool.*/
 export function getQueue(pool: QueuePool, name: string): Queue {
 	return pool.find(q => q.getName() == name)
 }

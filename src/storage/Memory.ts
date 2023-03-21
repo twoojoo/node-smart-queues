@@ -1,13 +1,11 @@
-import { registerNewStorage } from "../pool"
-import { QueueItem, QueueKind, StorageShiftOutput, StoredCount } from "../types"
+import { QueueItem, QueueMode, StorageShiftOutput, StoredCount } from "../types"
 import { Storage } from "./Storage"
 
-export class MemoryStorage<T = any> extends Storage {
+export class MemoryStorage extends Storage {
 	private memory: { [key: string]: QueueItem[] } = {}
 
 	constructor(name: string) {
 		super(name)
-		registerNewStorage(this)
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {
@@ -15,15 +13,15 @@ export class MemoryStorage<T = any> extends Storage {
 		this.memory[key].unshift(item)
 	}
 
-	async shiftFIFO(key: string, count: number): Promise<StorageShiftOutput> {
-		return this.shift("FIFO", key, count)
+	async popRight(key: string, count: number): Promise<QueueItem[]> {
+		return this.pop("FIFO", key, count)
 	}
 
-	async shiftLIFO(key: string, count: number): Promise<StorageShiftOutput> {
-		return this.shift("LIFO", key, count)
+	async popLeft(key: string, count: number): Promise<QueueItem[]> {
+		return this.pop("LIFO", key, count)
 	}
 
-	async shift(kind: QueueKind, key: string, count: number): Promise<StorageShiftOutput> {
+	async pop(kind: QueueMode, key: string, count: number): Promise<QueueItem[]> {
 		if (!this.memory[key]) this.memory[key] = []
 
 		const items: QueueItem[] = []
@@ -32,10 +30,7 @@ export class MemoryStorage<T = any> extends Storage {
 			if (this.memory[key].length > 0) 
 				items.push(kind == "FIFO" ? this.memory[key].pop() :this.memory[key].shift())
 
-		return {
-			items,
-			storedCount: await this.getStoredCount()
-		}
+		return items
 	}
 
 	async getStoredCount(): Promise<StoredCount> {

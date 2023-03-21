@@ -1,5 +1,4 @@
-import { registerNewStorage } from "../pool"
-import { QueueItem, QueueKind, StorageShiftOutput, StoredCount } from "../types"
+import { QueueItem, StoredCount } from "../types"
 import { Storage } from "./Storage"
 import { Redis } from "ioredis"
 
@@ -10,40 +9,33 @@ export class RedisStorage extends Storage {
 	constructor(name: string, redis: Redis) {
 		super(name)
 		this.redis = redis
-		this.keyHead = "n§çs§çq-" + name 
-		registerNewStorage(this)
+		this.keyHead = "n§çs§çq-" + name
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {
 		await this.redis.lpush(this.buildListKey(key), JSON.stringify(item));
 	}
 
-	async shiftFIFO(key: string, count: number): Promise<StorageShiftOutput> {
-		const items: any[] = []
+	async popRight(key: string, count: number): Promise<QueueItem[]> {
+		const items: QueueItem[] = []
 
 		for (let i = 0; i < count; i++) {
 			const item = await this.redis.rpop(this.buildListKey(key))
 			if (item) items.push(JSON.parse(item))
 		}
 
-		return {
-			storedCount: await this.getStoredCount(),
-			items
-		}
+		return items
 	}
 
-	async shiftLIFO(key: string, count: number): Promise<StorageShiftOutput> {
-		const items: any[] = []
+	async popLeft(key: string, count: number): Promise<QueueItem[]> {
+		const items: QueueItem[] = []
 
 		for (let i = 0; i < count; i++) {
 			const item = await this.redis.lpop(this.buildListKey(key))
 			if (item) items.push(JSON.parse(item))
 		}
 
-		return {
-			storedCount: await this.getStoredCount(),
-			items
-		}
+		return items
 	}
 
 	async getStoredCount(): Promise<StoredCount> {

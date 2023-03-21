@@ -1,8 +1,18 @@
 import { Queue } from "./Queue"
+import { Storage } from "./storage/Storage"
+
+export type QueueStaticOptions = {
+	storage?: StorageBuilder
+	loopRate?: number
+	gzip?: boolean
+	logger?: boolean
+}
+
+export type StorageBuilder = (name: string) => Storage
 
 export type QueuePool = Queue<any>[]
 
-export type QueueKind = "LIFO" | "FIFO"
+export type QueueMode = "LIFO" | "FIFO"
 
 export type QueueItem = {
 	pushTimestamp: number
@@ -15,16 +25,16 @@ export type QueueItemParsed<T> = {
 }
 
 export type Rules<T> = {
-	kind?: QueueKind //default fifo
-	shiftSize?: number
-	every?: number,
+	mode?: QueueMode //default fifo
+	// shiftSize?: number
+	// every?: number,
 	lastLockTimestamp?: number,
-	clonePre?: number,
-	clonePreCondition?: CloneCondition<T>,
-	clonePost?: number
-	clonePostCondition?: CloneCondition<T>,
-	exec?: ExecCallback<T>,
-	execAsync?: ExecCallback<T>,
+	// clonePre?: number,
+	// clonePreCondition?: CloneCondition<T>,
+	// clonePost?: number
+	// clonePostCondition?: CloneCondition<T>,
+	// exec?: ExecCallback<T>,
+	// execAsync?: ExecCallback<T>,
 	onPush?: OnPushCallback<T>
 	onPushAsync?: OnPushCallback<T>
 	locked?: boolean
@@ -32,6 +42,10 @@ export type Rules<T> = {
 	maxRetry?: number
 	onMaxRetry?: OnMaxRetryCallback<T>
 	onMaxRetryAsync?: OnMaxRetryCallback<T>
+	onPop?: OnPop
+	onPopAwait?: boolean
+	delay?: number
+	popSize?: number
 }
 
 
@@ -49,14 +63,15 @@ export type PushResult = {
 	error?: Error
 }
 
-
+export type CallbackOptions = { awaited?: boolean }
 type GenericQueueCallback<T = any> = (item: T, key?: string, queue?: Queue) => any
 export type ExecCallback<T = any> = GenericQueueCallback<T>
+export type OnPop<T = any> = GenericQueueCallback<T>
 export type OnPushCallback<T = any> = GenericQueueCallback<T>
 export type OnMaxRetryCallback<T = any> = (err?: Error, item?: T, key?: string, queue?: Queue) => any
 
 type Condition<T = any> = (item: T) => boolean
-export type CloneCondition<T = any> = Condition<T>
+// export type CloneCondition<T = any> = Condition<T>
 export type IgnoreItemCondition<T = any> = Condition<T>
 
 export type StoredCount = { [key: string]: number }
