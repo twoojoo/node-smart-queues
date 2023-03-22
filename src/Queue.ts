@@ -188,8 +188,8 @@ export class Queue<T = any> {
 	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
 	onPush(key: string, callback: OnPushCallback<T>, options: CallbackOptions) {
 		this.parseKey(key)
-		this.setRule(key, "onPushAsync", undefined)
 		this.setRule(key, "onPush", callback)
+		this.setRule(key, "onPushAwait", options.awaited)
 		return this
 	}
 
@@ -225,7 +225,7 @@ export class Queue<T = any> {
 				if (ignoreItemCondition(item))
 					return { pushed: false, }
 
-			 await this.pushItemInStorage(key, item, pushTimestamp)
+			await this.pushItemInStorage(key, item, pushTimestamp)
 
 			this.loopLocked = false
 			this.startLoop()
@@ -243,10 +243,17 @@ export class Queue<T = any> {
 
 	/**Push an item to the storage after executin onPush hooks if they exist*/
 	private async pushItemInStorage(key: string, item: T, pushTimestamp: number) {
-		if (this.keyRules[key].onPush) await this.keyRules[key].onPush(item, key, this)
-		else if (this.keyRules[key].onPushAsync) this.keyRules[key].onPushAsync(item, key, this)
-		else if (this.globalRules.onPush) await this.globalRules.onPush(item, key, this)
-		else if (this.globalRules.onPushAsync) await this.globalRules.onPushAsync(item, key, this)
+		if (this.keyRules[key].onPush && this.keyRules[key].onPushAwait) 
+			await this.keyRules[key].onPush(item, key, this)
+
+		else if (this.keyRules[key].onPush) 
+			this.keyRules[key].onPush(item, key, this)
+
+		else if (this.globalRules.onPush && this.globalRules.onPushAwait) 
+			await this.globalRules.onPush(item, key, this)
+
+		else if (this.globalRules.onPush) 
+			this.globalRules.onPush(item, key, this)
 
 		this.storage.push(key, {
 			pushTimestamp,
@@ -259,28 +266,21 @@ export class Queue<T = any> {
 	}
 
 	private async popItemFromQueue(key: string, item: T, callback: ExecCallback<T>, start: number) {
-
-		const maxRetry = 
-			this.keyRules[key].maxRetry || 
-			this.globalRules.maxRetry || 
-			1
+		const maxRetry = this.keyRules[key].maxRetry || this.globalRules.maxRetry || 1
 
 		let onMaxRetryCallback: OnMaxRetryCallback<T>
-		let isMaxRetryCallbackAsync: boolean = false
+		let awaitMaxRetryCallback: boolean
 
 		if (this.keyRules[key].onMaxRetry) {
 			onMaxRetryCallback = this.keyRules[key].onMaxRetry
-			isMaxRetryCallbackAsync = true
-		} else if (this.keyRules[key].onMaxRetryAsync) {
-			onMaxRetryCallback = this.keyRules[key].onMaxRetryAsync
-			isMaxRetryCallbackAsync = false
+			awaitMaxRetryCallback = this.keyRules[key].onMaxRetryAwait === false ? false : true
 		} else if (this.globalRules.onMaxRetry) {
 			onMaxRetryCallback = this.globalRules.onMaxRetry
-			isMaxRetryCallbackAsync = true
-		} else if (this.globalRules.onMaxRetryAsync) {
-			onMaxRetryCallback = this.globalRules.onMaxRetryAsync
-			isMaxRetryCallbackAsync = false
-		} else onMaxRetryCallback = ((_, error) => { throw error })
+			awaitMaxRetryCallback = this.globalRules.onMaxRetryAwait === false ? false : true
+		} else { 
+			onMaxRetryCallback = ((_, error) => { throw error })
+			awaitMaxRetryCallback = true
+		}
 		
 		let retryCount = 0
 		while (retryCount < maxRetry) {
@@ -292,8 +292,8 @@ export class Queue<T = any> {
 				if (retryCount > 0) this.log(`retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
 				retryCount++
 				if (retryCount >= maxRetry) {
-					if (isMaxRetryCallbackAsync) onMaxRetryCallback(error, item, key, this)
-					else await onMaxRetryCallback(error, item, key, this)
+					if (awaitMaxRetryCallback) await onMaxRetryCallback(error, item, key, this)
+					else onMaxRetryCallback(error, item, key, this)
 					break
 				}
 			}
@@ -355,7 +355,7 @@ export class Queue<T = any> {
 	/**Set the number of milliseconds that the queue has to wait befor flushing again for a specific key (net of flush execution time)
 	* @param key - provide a key (* refers to all keys)
 	* @param delay - milliseconds*/
-	setDelay(key: string, delay: number) {
+	delay(key: string, delay: number) {
 		this.parseKey(key)
 		this.setRule(key, "delay", delay)
 		this.log(`${delay}ms delay set - queue ${this.name}`, key == ALL_KEYS_CH ? "" : `- key ${key}`)

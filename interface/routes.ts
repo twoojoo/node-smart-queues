@@ -122,7 +122,7 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			if (!req.query.time) rep.status(400).send("time required")
 			const time = parseInt(req.query.time)
 			if (isNaN(time)) rep.status(400).send("time must be a valid number")
-			queue.setDelay("*", time)
+			queue.delay("*", time)
 			rep.send()
 		}
 	}, {
@@ -135,7 +135,7 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			if (!req.query.time) rep.status(400).send("time required")
 			const time = parseInt(req.query.time)
 			if (isNaN(time)) rep.status(400).send("time must be a valid number")
-			queue.setDelay(key, time)
+			queue.delay(key, time)
 			rep.send()
 		}
 	}]

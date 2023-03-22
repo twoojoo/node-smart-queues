@@ -25,24 +25,16 @@ export type QueueItemParsed<T> = {
 }
 
 export type Rules<T> = {
-	mode?: QueueMode //default fifo
-	// shiftSize?: number
-	// every?: number,
+	mode?: QueueMode
 	lastLockTimestamp?: number,
-	// clonePre?: number,
-	// clonePreCondition?: CloneCondition<T>,
-	// clonePost?: number
-	// clonePostCondition?: CloneCondition<T>,
-	// exec?: ExecCallback<T>,
-	// execAsync?: ExecCallback<T>,
 	onPush?: OnPushCallback<T>
-	onPushAsync?: OnPushCallback<T>
+	onPushAwait?: boolean
 	locked?: boolean
 	ignoreItemCondition?: IgnoreItemCondition<T>
 	maxRetry?: number
 	onMaxRetry?: OnMaxRetryCallback<T>
-	onMaxRetryAsync?: OnMaxRetryCallback<T>
-	onPop?: OnPop
+	onMaxRetryAwait?: boolean
+	onPop?: OnPop<T>
 	onPopAwait?: boolean
 	delay?: number
 	popSize?: number
