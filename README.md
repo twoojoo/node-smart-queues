@@ -31,8 +31,16 @@ A stateful queueu system for Node.js that focuses on versatility.
 
 ## Installation
 
+Base package:
+
 ```bash
-npm install node-smart-queues
+npm install @twoojoo/node-smart-queues
+```
+
+HTTP / CLI interface
+
+```bash
+npm install @twoojoo/node-smart-queues
 ```
 
 ## Basic usage
@@ -40,9 +48,9 @@ npm install node-smart-queues
 This example shows a simple queue where enqueued jobs will be dequeued every second.
 
 ```typescript
-import { SmartQueue } from "node-smart-queues"
+import { Queue } from "@twoojoo/node-smart-queues"
 
-const queue = SmartQueue<number>("my-queue", {
+const queue = Queue<number>("my-queue", {
 	logger: true,
 	dequeueInterval: 1000,
 	onDequeue: (i, k, q) => console.log(`dequeued item ${i} with key ${k} from queue ${q}`)
@@ -64,7 +72,7 @@ Smart Queues use an in-memory storage system by default (not crash safe), but yo
 Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues. If the file already exists be sure it's empty on the first run.
 
 ```typescript
-const queue = SmartQueue<number>("my-queue", {
+const queue = Queue<number>("my-queue", {
 	storage: fileSystemStorage("/path/to/file"),
 	dequeueInterval: 1000,
 	onDequeue: () => console.log(i))
@@ -76,7 +84,7 @@ const queue = SmartQueue<number>("my-queue", {
 Will use Redis' lists as storage system. [ioredis](https://github.com/luin/ioredis) options must be provideded. If you think that the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
 
 ```typescript
-const queue = SmartQueue<number>("my-queue", {
+const queue = Queue<number>("my-queue", {
 	storage: redisStorage({ host: "localhost", port: 6379 }),
 	gzip: true,
 	dequeueInterval: 1000,
@@ -128,8 +136,8 @@ q1.key("k1", {
 To interact with all the queues in the pool via the built-in HTTP/CLI interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
 
 ```typescript
-import { QueuesPool, SmartQueue } from "nsq"
-import { setupInterface } from "nsq-interface"
+import { QueuesPool, Queue } from "@twoojoo/node-smart-queues"
+import { setupInterface } from "@twoojoo/node-smart-queues-interface"
 
 (async function () {
 	await setupInterface(QueuesPool, {
@@ -137,7 +145,7 @@ import { setupInterface } from "nsq-interface"
 		logger: true //default: false
 	})
 
-	const q = SmartQueue<string>("q1", {
+	const q = Queue<string>("q1", {
 		onDequeue: (i) => console.log(i
 	}).start()
 
