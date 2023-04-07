@@ -8,13 +8,11 @@ import { shuffleArray } from "./utils"
 
 export class Queue<T = any> {
 	// static options
+	private name: string
 	private storage: Storage = undefined
 	private loopRate: number = 1000 / DEFAULT_SHIFT_RATE
 	private gzip: boolean = false
 	private logger: boolean = true
-
-	// dynamic options
-	private name: string
 
 	// loop control
 	private alreadyStartedOnce: boolean = false
@@ -211,7 +209,7 @@ export class Queue<T = any> {
 				if (!this.globalRules.priority.includes(key))
 					return { pushed: false, message: `key "${key}" is not prioritized` }
 
-			this.parseKey(key)
+			if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 
 			//check if there is a condition for the item to 
 			//be ignored and calculate the condition result
@@ -298,12 +296,6 @@ export class Queue<T = any> {
 		if (Array.isArray(keys)) this.globalRules.ignore = this.globalRules.ignore.filter(k => !keys.includes(k))
 		else this.globalRules.ignore = this.globalRules.ignore.filter(k => keys == k)
 		return this
-	}
-
-	/**register default key rules and return true if key is the global character*/
-	private parseKey(key: string): boolean {
-		if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
-		return false
 	}
 
 	/**Key kind overrides queue kind*/
