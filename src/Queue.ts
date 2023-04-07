@@ -246,7 +246,7 @@ export class Queue<T = any> {
 				Buffer.from(JSON.stringify(item))
 		})
 
-		this.log(`pushed item - queue: ${this.name} - key: ${key} [${Date.now() - pushTimestamp}ms]`)
+		this.log(`enqueue item - queue: ${this.name} - key: ${key} [${Date.now() - pushTimestamp}ms]`)
 	}
 
 	private async popItemFromQueue(key: string, item: T, callback: ExecCallback<T>, start: number) {
@@ -269,7 +269,7 @@ export class Queue<T = any> {
 		let retryCount = 0
 		while (retryCount < maxRetry) {
 			try {
-				this.log(`flushed item - queue: ${this.name} - key: ${key} [${Date.now() - start}ms]`)
+				this.log(`dequeued item - queue: ${this.name} - key: ${key} [${Date.now() - start}ms]`)
 				await callback(item, key, this)
 				break
 			} catch (error) {

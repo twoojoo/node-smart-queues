@@ -59,9 +59,9 @@ const queue = Queue<number>("my-queue", {
 }).start();
 
 (async function() {
-	await queue.push("my-key", 1)
-	await queue.push("my-key", 2)
-	await queue.push("my-key", 3)
+	await queue.enqueue("my-key", 1)
+	await queue.enqueue("my-key", 2)
+	await queue.enqueue("my-key", 3)
 })()
 ```
 
