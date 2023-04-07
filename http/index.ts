@@ -13,7 +13,7 @@ export type NsqInterfaceConfig = {
 	port: number
 }
 
-export function setupInterface(pool: QueuePool, options: NsqHttpOptions = {}): Promise<NsqInterfaceConfig> {
+export function nsqServer(pool: QueuePool, options: NsqHttpOptions = {}): Promise<NsqInterfaceConfig> {
 	return new Promise((resolve, reject) => {
 		const nsqServer = Fastify({ logger: false });
 

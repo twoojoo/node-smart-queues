@@ -143,9 +143,9 @@ To interact with all the queues in the pool via the built-in HTTP/CLI interface,
 
 ```typescript
 import { QueuesPool, Queue } from "node-smart-queues"
-import { setupInterface } from "node-smart-queues-interface"
+import { nsqServer } from "node-smart-queues-http"
 
-await setupInterface(QueuesPool, {
+await nsqHTTP(QueuesPool, {
 	port: 3000, //default: 80
 	logger: true //default: false
 })

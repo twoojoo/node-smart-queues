@@ -1,8 +1,8 @@
 import { QueuesPool, Queue, redisStorage } from "../src"
-import { setupInterface } from "../interface/server";
+import { nsqServer } from "../http";
 
 (async function () {
-	await setupInterface(QueuesPool, { port: 3000, logger: true })
+	await nsqServer(QueuesPool, { port: 3000, logger: true })
 
 	const q = new Queue<number>("q1", { 
 		onDequeue: async (i) => console.log(i),

@@ -1,11 +1,8 @@
 {
-  "name": "nsq-http",
+  "name": "node-smart-queues-http",
   "version": "0.0.1",
-  "description": "http interface for node-smart-queues",
+  "description": "HTTP interface for node-smart-queues",
   "main": "dist/http/index.js",
-  "bin": {
-    "nsq-cli": "node dist/interface/cli.js"
-  },
   "scripts": {
     "build": "rm -rf ./dist && tsc"
   },
