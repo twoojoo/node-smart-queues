@@ -10,13 +10,13 @@
 	<div>Crash safe</div>
 	<div>Job key based</div>
 	<div>Scheduled jobs</div>
-	<p>Concurrent queues</p>
-	<p>Priorities</p>
-	<p>FIFO / LIFO</p>
-	<p>Queues Pool</p>
-	<p>HTTP interface</p>
-	<p>CLI</p>
-	<p>Typescript first</p>
+	<div>Concurrent queues</div>
+	<div>Priorities</div>
+	<div>FIFO / LIFO</div>
+	<div>Queues Pool</div>
+	<div>HTTP interface</div>
+	<div>CLI</div>
+	<div>Typescript first</div>
 </p>
 
 ## Table of Contents
