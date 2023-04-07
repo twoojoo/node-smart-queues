@@ -88,18 +88,18 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		url: "/v1/queue/:name/mode",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
-			rep.send(queue?.getPopMode())
+			rep.send(queue?.getDequeueMode())
 		}
 	}, {
 		method: "GET",
 		url: "/v1/queue/:name/key/:key/mode",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
-			rep.send(queue?.getPopMode(req.params.key))
+			rep.send(queue?.getDequeueMode(req.params.key))
 		}
 	}, {
 		method: "GET",
-		url: "/v1/queue/:name/key/:key/push",
+		url: "/v1/queue/:name/key/:key/enqueue",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
 			const itemKind = req.query.kind?.toLowerCase()
@@ -110,32 +110,33 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 					parseFloat(req.query.item) :
 					req.query.item
 
-			const result = await queue.push(req.params.key, item)
+			const result = await queue.enqueue(req.params.key, item)
 
 			rep.send(result)
 		}
 	}, {
 		method: "GET",
-		url: "/v1/queue/:name/delay",
+		url: "/v1/queue/:name/interval",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
 			if (!req.query.time) rep.status(400).send("time required")
-			const time = parseInt(req.query.time)
-			if (isNaN(time)) rep.status(400).send("time must be a valid number")
-			queue.delay("*", time)
+			const dequeueInterval = parseInt(req.query.time)
+			if (isNaN(dequeueInterval)) rep.status(400).send("time must be a valid number")
+			console.log(dequeueInterval)
+			queue.options({ dequeueInterval })
 			rep.send()
 		}
 	}, {
 		method: "GET",
-		url: "/v1/queue/:name/key/:key/delay",
+		url: "/v1/queue/:name/key/:key/interval",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
 			const key = req.params.key
 			if (!key) rep.status(400).send("key required")
 			if (!req.query.time) rep.status(400).send("time required")
-			const time = parseInt(req.query.time)
-			if (isNaN(time)) rep.status(400).send("time must be a valid number")
-			queue.delay(key, time)
+			const dequeueInterval = parseInt(req.query.time)
+			if (isNaN(dequeueInterval)) rep.status(400).send("time must be a valid number")
+			queue.options({ dequeueInterval })
 			rep.send()
 		}
 	}]

@@ -1,7 +1,22 @@
 import { Queue } from "./Queue"
 import { Storage } from "./storage/Storage"
 
-export type QueueStaticOptions = {
+export type QueueOptions<T> = QueueBasicOptions & KeyOptions<T> & {
+	priority?: string[],
+	ignore?: string[],
+	ignoreNotPrioritized?: boolean,
+	randomPriority?: boolean
+}
+
+export type GlobalOptions<T> = GlobalRules<T> 
+export type GlobalRules<T> = KeyOptions<T> & {
+	priority?: string[],
+	ignore?: string[],
+	ignoreNotPrioritized?: boolean,
+	randomPriority?: boolean
+}
+
+type QueueBasicOptions = {
 	storage?: StorageBuilder
 	loopRate?: number
 	gzip?: boolean
@@ -24,22 +39,21 @@ export type QueueItemParsed<T> = {
 	value: T
 }
 
-export type Rules<T> = {
+export type KeyRules<T> = {
 	mode?: QueueMode
 	lastLockTimestamp?: number,
-	onPush?: OnPushCallback<T>
-	onPushAwait?: boolean
 	locked?: boolean
 	ignoreItemCondition?: IgnoreItemCondition<T>
 	maxRetry?: number
 	onMaxRetry?: OnMaxRetryCallback<T>
 	onMaxRetryAwait?: boolean
-	onPop?: OnPop<T>
-	onPopAwait?: boolean
-	delay?: number
-	popSize?: number
+	onDequeue?: OnPop<T>
+	onDequeueAwait?: boolean
+	dequeueInterval?: number
+	dequeueSize?: number
 }
 
+export type KeyOptions<T> = Omit<KeyRules<T>, 'lastLockTimestamp' | 'locked'>
 
 export type PriorityOptions = {
 	ignoreNotPrioritized?: boolean

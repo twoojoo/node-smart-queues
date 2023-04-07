@@ -1,6 +1,5 @@
 import * as readline from "node:readline/promises"
 import * as qs from "node:querystring"
-import { ALL_KEYS_CH } from "../src/constants";
 
 const port = parseInt(process.argv[2] || "80")
 if (isNaN(port)) throw Error("port must be a valid number");
@@ -180,7 +179,7 @@ function commands(url: string): { [name: string]: Command } {
 				return Object.entries(resp).map(([name, mode]) => `${name}: ${mode}`).join("\n")
 			}
 		},
-		push: {
+		enqueue: {
 			description: "push an item to a queue with a key",
 			usage: "push <queue-name> <key-name> <item-content> <item-type> [json/string/number (default: string)]",
 			action: async (cmd: string[]) => {
@@ -192,28 +191,28 @@ function commands(url: string): { [name: string]: Command } {
 				if (!key) return "no key provided"
 				if (!kind) console.log("no kind provided (defatul: string)")
 				const queryString = qs.stringify({ item, kind })
-				const resp = await (await request(url + "queue/" + name + "/key/" + key + "/push?" + queryString)).json() 
+				const resp = await (await request(url + "queue/" + name + "/key/" + key + "/enqueue?" + queryString)).json() 
 				return resp
 			}
 		},
-		delay: {
-			description: "sets a delay for the queue or for a specific key",
-			usage: "delay <queue-name> <key-name> <item-content> <item-type> [json/string/number (default: string)]",
-			action: async (cmd: string[]) => {
-				const name = cmd[1]
-				const key = cmd[2]
-				const time = cmd[3]
-				if (!name) return "no queue name provided"
-				if (!key) return "no key provided ('*' refers to all keys)"
-				if (!time) return "no time provided"
-				if (isNaN(parseInt(time))) return "time must be a valid number"
-				const queryString = qs.stringify({ time })
-				const resp = await (key == ALL_KEYS_CH ?
-					await request(url + "queue/" + name + "/delay?" + queryString) :
-					await request(url + "queue/" + name + "/key/" + key + "/delay?" + queryString)).text() 
-				return resp
-			}
-		},
+		// delay: {
+		// 	description: "sets an interval for the queue or for a specific key",
+		// 	usage: "delay <queue-name> <key-name> <item-content> <item-type> [json/string/number (default: string)]",
+		// 	action: async (cmd: string[]) => {
+		// 		const name = cmd[1]
+		// 		const key = cmd[2]
+		// 		const time = cmd[3]
+		// 		if (!name) return "no queue name provided"
+		// 		if (!key) return "no key provided ('*' refers to all keys)"
+		// 		if (!time) return "no time provided"
+		// 		if (isNaN(parseInt(time))) return "time must be a valid number"
+		// 		const queryString = qs.stringify({ time })
+		// 		const resp = await (key == ALL_KEYS_CH ?
+		// 			await request(url + "queue/" + name + "/interval?" + queryString) :
+		// 			await request(url + "queue/" + name + "/key/" + key + "/interval?" + queryString)).text() 
+		// 		return resp
+		// 	}
+		// },
 		exit: {
 			description: "exit the cli",
 			usage: "exit",

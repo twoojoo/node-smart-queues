@@ -1,5 +1,5 @@
-import { CallbackOptions, ExecCallback, IgnoreItemCondition, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueMode, QueueStaticOptions, Rules, StoredCount } from "./types"
-import { ALL_KEYS_CH, DEFAULT_SHIFT_RATE } from "./constants"
+import { CallbackOptions, ExecCallback, IgnoreItemCondition, KeyOptions, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueMode, QueueOptions, GlobalRules, KeyRules, StoredCount, GlobalOptions } from "./types"
+import { DEFAULT_SHIFT_RATE } from "./constants"
 import { inMemoryStorage } from "./storage"
 import { Storage } from "./storage/Storage"
 import { registerNewQueue } from "./pool"
@@ -23,37 +23,49 @@ export class Queue<T = any> {
 	private paused: boolean = false
 	private loopLocked: boolean = true
 
-	// priority / ignore
-	private priorities: string[] = []
-	private randomized: boolean = false
-	private ignoreNotPrioritized: boolean = false
-	private keysToIgnore: string[] = []
-
 	// rules
-	private globalRules: Rules<T> = {}
-	private keyRules: { [key: string]: Rules<T> } = {}
+	private globalRules: GlobalRules<T> = {}
+	private keyRules: { [key: string]: KeyRules<T> } = {}
 
-	constructor(name: string, options: QueueStaticOptions = {}) {
+	constructor(name: string, options: QueueOptions<T> = {}) {
 		this.name = name
 		this.storage = options?.storage?.(name) || inMemoryStorage()(name)
 		this.gzip = options.gzip || false
 		this.loopRate = (options.loopRate || DEFAULT_SHIFT_RATE) / 1000
+		this.globalRules = options
 		registerNewQueue(this)
 	}
-
-	/// STATIC PROPERTIES
 	
 	/**Returns the name of the queue*/
 	getName() { return this.name }
+
+	log(...args: any[]) {
+		if (this.logger) console.log(new Date(), `#>`, ...args)
+	}
+
+	/**Set options for the entire queue*/
+	options(options: GlobalOptions<T>) {
+		this.globalRules = { ...this.globalRules, ...options }
+		return this
+	}
+
+	/**Set options for a specific key
+	 * @note specific options override global options 
+	 * @note if an options isn't provided the queue will fallback to the correspondany global option*/
+	key(key: string, options: KeyOptions<T>) {
+		if (this.keyRules[key]) this.keyRules[key] = {}
+		this.keyRules[key] = { ...this.keyRules[key], ...options }
+		return this
+	}
 
 	// LOOP CONTROL
 
 	/** ignoreNotPrioritized affects pushed item only */
 	private calculatePriority(): string[] {
 		const knownKeys = Object.keys(this.keyRules)
-		if (this.randomized) return shuffleArray(knownKeys)
-		const notPrioritized = knownKeys.filter(key => !this.priorities.includes(key))
-		return this.priorities.concat(notPrioritized) 
+		if (this.globalRules.randomPriority) return shuffleArray(knownKeys)
+		const notPrioritized = knownKeys.filter(key => !(this.globalRules.priority || []).includes(key))
+		return (this.globalRules.priority || []).concat(notPrioritized) 
 	}
 
 	/**Look in the storage for keys that still have some pending items*/
@@ -102,34 +114,34 @@ export class Queue<T = any> {
 
 				//skip the key if a pop callback is not provided 
 				//(maybe remove this feature and just pop)
-				if (!keyRules.onPop && !this.globalRules.onPop) continue
+				if (!keyRules.onDequeue && !this.globalRules.onDequeue) continue
 
 				//if the key is locked (due to delay) check if the delay is expired.
 				//If so unlock key and go on, else coninue to the next key
 				if (keyRules.locked) {
-					const delaySize = keyRules.delay || this.globalRules.delay
-					if ((Date.now() - keyRules.lastLockTimestamp) >= delaySize) this.unlockKey(key)
+					const intervalSize = keyRules.dequeueInterval || this.globalRules.dequeueInterval
+					if ((Date.now() - keyRules.lastLockTimestamp) >= intervalSize) this.unlockKey(key)
 					else continue
 				}
 
 				//get the number of items to pop
-				const popSize = keyRules.popSize || this.globalRules.popSize || 1
+				const dequeueSize = keyRules.dequeueSize || this.globalRules.dequeueSize || 1
 
 				//pop items
 				const items = this.getPopModeIternal(key) == "FIFO" ?
-					await this.storage.popRight(key, popSize) : 
-					await this.storage.popLeft(key, popSize)
+					await this.storage.popRight(key, dequeueSize) : 
+					await this.storage.popLeft(key, dequeueSize)
 
 				if (items.length > 0) {
-					if (keyRules.delay || this.globalRules.delay) this.lockKey(key)
+					if (keyRules.dequeueInterval || this.globalRules.dequeueInterval) this.lockKey(key)
 
 					for (let item of items) {
 						const pItem = await this.parseQueueItem(item)
 						// get the correct calòback to execute (and if must be awaited or not)
-						if (keyRules.onPop && !keyRules.onPopAwait) this.popItemFromQueue(key, pItem.value, keyRules.onPop, start)
-						else if (keyRules.onPop && keyRules.onPopAwait) await this.popItemFromQueue(key, pItem.value, keyRules.onPop, start)
-						else if (this.globalRules.onPop && !this.globalRules.onPopAwait) await this.popItemFromQueue(key, pItem.value, this.globalRules.onPop, start)
-						else if (this.globalRules.onPop && this.globalRules.onPopAwait) this.popItemFromQueue(key, pItem.value, this.globalRules.onPop, start)
+						if (keyRules.onDequeue && !keyRules.onDequeueAwait) this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
+						else if (keyRules.onDequeue && keyRules.onDequeueAwait) await this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
+						else if (this.globalRules.onDequeue && !this.globalRules.onDequeueAwait) await this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
+						else if (this.globalRules.onDequeue && this.globalRules.onDequeueAwait) this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
 					}
 
 					// unlock the loop only if there the 
@@ -181,36 +193,22 @@ export class Queue<T = any> {
 		return this
 	}
 
-	/// CALLBACKS
-
-	/**Set a callback to be executed syncronously (awaited if async) when pushing items for a specific key
-	* @param key - provide a key (* refers to all keys)
-	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
-	onPush(key: string, callback: OnPushCallback<T>, options: CallbackOptions) {
-		this.parseKey(key)
-		this.setRule(key, "onPush", callback)
-		this.setRule(key, "onPushAwait", options.awaited)
-		return this
-	}
-
 	/**Push an item in the queue for a certain key
 	 * @param key - provide a key (* refers to all keys and will throw an error when used as a key)
 	 * @param item - item to be pushed in the queue
 	 * @returns true if the item wasn't ignored by the queue
 	 * */
-	async push(key: string, item: T, options: PushOptions = {}): Promise<PushResult> {
+	async enqueue(key: string, item: T, options: PushOptions = {}): Promise<PushResult> {
 		try {
 			const pushTimestamp = Date.now()
 
-			if (key == ALL_KEYS_CH) throw Error(`"*" character cannot be used as a key (refers to all keys)`)
-
 			//check if the key is to be ignored
-			if (this.keysToIgnore.includes(key)) 
+			if (this.globalRules.ignore?.includes(key)) 
 				return { pushed: false, message: `key "${key}" is ignored by the queue` }
 
 			//check if the key is not prioritized and should be skipped
-			if (this.ignoreNotPrioritized) 
-				if (!this.priorities.includes(key))
+			if (this.globalRules.ignoreNotPrioritized) 
+				if (!this.globalRules.priority.includes(key))
 					return { pushed: false, message: `key "${key}" is not prioritized` }
 
 			this.parseKey(key)
@@ -243,18 +241,6 @@ export class Queue<T = any> {
 
 	/**Push an item to the storage after executin onPush hooks if they exist*/
 	private async pushItemInStorage(key: string, item: T, pushTimestamp: number) {
-		if (this.keyRules[key].onPush && this.keyRules[key].onPushAwait) 
-			await this.keyRules[key].onPush(item, key, this)
-
-		else if (this.keyRules[key].onPush) 
-			this.keyRules[key].onPush(item, key, this)
-
-		else if (this.globalRules.onPush && this.globalRules.onPushAwait) 
-			await this.globalRules.onPush(item, key, this)
-
-		else if (this.globalRules.onPush) 
-			this.globalRules.onPush(item, key, this)
-
 		this.storage.push(key, {
 			pushTimestamp,
 			value: this.gzip ?
@@ -300,160 +286,35 @@ export class Queue<T = any> {
 		}
 	}
 
-	/**Set FIFO behaviour (default). If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
-	 * @param key - provide a key (* refers to all keys)*/
-	setFIFO(key: string = "*") {
-		this.parseKey(key)
-		this.setRule(key, "mode", "FIFO")
-		return this
-	}
-
-	/**Set LIFO behaviour. If a key is provided the behaviour is applied to that key and overrides the queue global behaviour for that key
-	 * @param key - provide a key (* refers to all keys)*/
-	setLIFO(key: string = "*") {
-		this.parseKey(key)
-		this.setRule(key, "mode", "LIFO")
-		return this
-	}
-
-	/**Set keys priority (fist keys in the array have higher priority)
-	* @param key - provide a key (* is forbidden here)
-	* @param options.ignoreUnknownKeys - ignore all pushed items whose key is not included in the provided priority array*/
-	setPriority(keys: string[], options: PriorityOptions = {}) {
-		if (keys.includes(ALL_KEYS_CH)) throw Error("* cannot be used here (refers to all keys)")
-		this.randomized = false
-		this.ignoreNotPrioritized = !!options.ignoreNotPrioritized
-		this.priorities = keys
-		return this
-	} 
-
-	randomizePriority() {
-		this.randomized = true
-		return this
-	}
-
-	/**Set a callback to be executed syncronously (awaited if async) when flushing items for a specific key
-	* @param key - provide a key (* refers to all keys)
-	* @param callback - (item, key?, queue?) => { ..some action.. } [can be async]*/
-	onPop(key: string, callback: ExecCallback<T>, options: CallbackOptions = {}) {
-		this.parseKey(key)
-		this.setRule(key, "onPop", callback)
-		this.setRule(key, "onPopAwait", options.awaited === false ? false : true)
-		return this
-	}
-
-	/**Set the number of items to flush at one time (the exec calback is called once for each item separately)
-	* @param key - provide a key (* refers to all keys)
-	* @param size - flush size*/
-	popSize(key: string, size: number) {
-		this.parseKey(key)
-		this.setRule(key, "popSize", size)
-		this.log(`set pop size: ${size} - queue ${this.name}`, key == ALL_KEYS_CH ? "" : `- key ${key}`)
-		return this
-	}
-
-	/**Set the number of milliseconds that the queue has to wait befor flushing again for a specific key (net of flush execution time)
-	* @param key - provide a key (* refers to all keys)
-	* @param delay - milliseconds*/
-	delay(key: string, delay: number) {
-		this.parseKey(key)
-		this.setRule(key, "delay", delay)
-		this.log(`${delay}ms delay set - queue ${this.name}`, key == ALL_KEYS_CH ? "" : `- key ${key}`)
-		return this
-	}
-
 	/**Ignores items pushed for the provided keys (dosen't override previously ignored key)
 	 * @param keys - provide a list of keys (key * is forbidden)*/
 	ignoreKeys(keys: string[] | string) {
-		if (Array.isArray(keys)) {
-			if (keys.includes(ALL_KEYS_CH)) 
-				throw Error("cannot ignore all keys (*) - use pause() instead")	
-
-			this.keysToIgnore = Array.from(new Set(this.keysToIgnore.concat(keys)))
-		} else {
-			if (keys == ALL_KEYS_CH) 
-				throw Error("cannot ignore all keys (*) - use pause() instead")	
-
-			this.keysToIgnore = Array.from(new Set(this.keysToIgnore.concat([keys])))
-		}
+		if (Array.isArray(keys)) this.globalRules.ignore = Array.from(new Set(this.globalRules.ignore.concat(keys)))
+		else this.globalRules.ignore = Array.from(new Set(this.globalRules.ignore.concat([keys])))
 		return this
 	} 
 
-	/**Ignores items pushed for the provided keys (doen't override previously ignored key)
-	* @param keys - provide a list of keys (* restores all keys)*/
 	restoreKeys(keys: string[] | string) {
-		if (Array.isArray(keys)) {
-			if (keys.includes(ALL_KEYS_CH)) this.keysToIgnore = []
-			else this.keysToIgnore = this.keysToIgnore.filter(k => !keys.includes(k))
-		} else {
-			if (keys == ALL_KEYS_CH) this.keysToIgnore = []
-			else this.keysToIgnore = this.keysToIgnore.filter(k => keys == k)
-		}
-
-		return this
-	}
-
-	/**Set a condition for pushed items to be ignored
-	 * @param keys - provide a key (* refers to all keys)
-	 * @param condition - if returns true, the item is ignored*/
-	ignoreItems(key: string, condition: IgnoreItemCondition<T>) {
-		this.parseKey(key)
-		this.setRule(key, "ignoreItemCondition", condition)
-		return this
-	}
-
-	/**Set a maximum retry number if the flush callback throws an error
-	 * @param key - provide a key (* refers to all keys)
-	 * @param max - number of retries*/
-	setMaxRetry(key: string, max: number = 1) {
-		this.parseKey(key)
-		this.setRule(key, "maxRetry", max)
-		return this
-	}
-
-	/**Set a callback for when the maximum retry number has been reached
-	 * @param key - provide a key (* refers to all keys)
-	 * @param callback - max retry callback (throw the last retry error by default)*/
-	onMaxRetry(key: string, callback: OnMaxRetryCallback) {
-		this.parseKey(key)
-		this.setRule(key, "onMaxRetryAsync", undefined)
-		this.setRule(key, "onMaxRetry", callback)
-		return this
-	}
-
-	/**Set a callback for when the maximum retry number has been reached
-	 * @param key - provide a key (* refers to all keys)
-	 * @param callback - max retry callback (throw the last retry error by default)*/
-	onMaxRetryAsync(key: string, callback: OnMaxRetryCallback) {
-		this.parseKey(key)
-		this.setRule(key, "onMaxRetry", undefined)
-		this.setRule(key, "onMaxRetryAsync", callback)
+		if (Array.isArray(keys)) this.globalRules.ignore = this.globalRules.ignore.filter(k => !keys.includes(k))
+		else this.globalRules.ignore = this.globalRules.ignore.filter(k => keys == k)
 		return this
 	}
 
 	/**register default key rules and return true if key is the global character*/
 	private parseKey(key: string): boolean {
-		if (key == ALL_KEYS_CH) return true
 		if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 		return false
 	}
 
 	/**Key kind overrides queue kind*/
 	private getPopModeIternal(key: string): QueueMode {
-		if (key == ALL_KEYS_CH) return this.globalRules.mode
 		if (this.keyRules[key].mode == "FIFO") return "FIFO"
 		if (this.keyRules[key].mode == "LIFO") return "LIFO"
 		if (this.globalRules.mode) this.globalRules.mode
 		else return "FIFO"
 	}
 
-	private setRule(key: string, rule: string, value: any) {
-		if (!rule) return
-		if (key == ALL_KEYS_CH) this.globalRules[rule] = value
-		else this.keyRules[key][rule] = value
-	}
-
-	private defaultKeyRules(): Rules<T> {
+	private defaultKeyRules(): KeyRules<T> {
 		return {}
 	}
 
@@ -464,8 +325,7 @@ export class Queue<T = any> {
 
 	/**Tells if a key is ignored by the queue*/
 	isKeyIgnored(key: string): boolean {
-		if (key == ALL_KEYS_CH) throw Error("* refers to all keys and cannot be used here")
-		return !!this.keysToIgnore.includes(key)
+		return !!this.globalRules.ignore.includes(key)
 	}
 
 	async getStorageCount(): Promise<StoredCount> {
@@ -490,15 +350,13 @@ export class Queue<T = any> {
 			parsedItem.value = JSON.parse(toBeParsed)
 			return parsedItem
 		} catch (err) {
-			// console.log(err)
-			// console.log(Buffer.from(item.value).toString())
 			parsedItem.value = JSON.parse(Buffer.from(item.value).toString()) as T
 			return parsedItem
 		}
 	} 
 
-	getPopMode(key: string = ALL_KEYS_CH): { [key: string]: QueueMode } | QueueMode {
-		if (key == ALL_KEYS_CH) {
+	getDequeueMode(key?: string): { [key: string]: QueueMode } | QueueMode {
+		if (!key) {
 			const modeByKey: { [key: string]: QueueMode } = {}
 
 			const defaultMode = this.globalRules.mode || "FIFO"
@@ -515,9 +373,5 @@ export class Queue<T = any> {
 			if (this.globalRules.mode) return this.globalRules.mode
 			return "FIFO"
 		}
-	}
-
-	log(...args: any[]) {
-		if (this.logger) console.log(new Date(), `#>`, ...args)
 	}
 }
