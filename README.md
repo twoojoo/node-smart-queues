@@ -73,6 +73,8 @@ Smart Queues use an in-memory storage system by default (not crash safe), but yo
 Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues. If the file already exists be sure it's empty on the first run.
 
 ```typescript
+import { Queue, fileSystemStorage } from "@twoojoo/node-smart-queues"
+
 const queue = Queue<number>("my-queue", {
 	storage: fileSystemStorage("/path/to/file"),
 	dequeueInterval: 1000,
@@ -85,6 +87,8 @@ const queue = Queue<number>("my-queue", {
 Will use Redis' lists as storage system. [ioredis](https://github.com/luin/ioredis) options must be provideded. If you think that the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
 
 ```typescript
+import { Queue, redisStorage } from "@twoojoo/node-smart-queues"
+
 const queue = Queue<number>("my-queue", {
 	storage: redisStorage({ host: "localhost", port: 6379 }),
 	gzip: true,
