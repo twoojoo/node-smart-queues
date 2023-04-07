@@ -4,16 +4,17 @@ A stateful queueu system for Node.js that focuses on versatility.
 
 ### Features
 
-- **Stateful**
+- **Stateful** (Redis, file system)
 - **Crash safe** (automatic recovery)
 - **Job key based**
+- **Job retry**
 - **Scheduled jobs**
 - **Concurrent queues**
 - **Priorities**
 - **Randomizable**
 - **FIFO** / **LIFO** 
 - **Queues Pool**
-- **Compression**
+- **Compression** (gzip)
 - **HTTP interface**
 - **CLI interface**
 - **Typescript first**
