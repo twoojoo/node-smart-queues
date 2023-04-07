@@ -1,5 +1,17 @@
 # Node Smart Queues
 
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Basic usage](#basic-usage)
+- [Stateful](#stateful)
+	- [File System Storage](#file-system-storage)
+	- [Redis Storage](#redis-storage)
+- [Options](#options)
+- [HTTP / CLI interface](#http-cli-interface)
+	- [Endpoints](#endpoints)
+	- [CLI commands](#cli-clommands)
+
 ## Features
 
 - Stateful
