@@ -1,4 +1,4 @@
-<p align="center" width="85%">
+<p align="center" width="100%">
 	<br>
   <img src="./images/logo_size_invert.jpg" width="100%" />
   <br>
