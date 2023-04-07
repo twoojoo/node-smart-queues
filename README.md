@@ -171,7 +171,7 @@ nsq-cli <address>
 Type *help* in the cli to get the list of all available commands.
 
 ```
- LIST - gets the names of the queues registered in the pool (comma separated)
+LIST - gets the names of the queues registered in the pool (comma separated)
 	list
  EXISTS - tells if a queue exists in the pool(true/false)
 	exists <queue-name>
@@ -184,9 +184,13 @@ Type *help* in the cli to get the list of all available commands.
  IGNORE - commands a queue to ignore a list of keys (comma separated)
 	ignore <queue-name> <key1>,<key2>,<key3>
  IGNORED - tells if a key is ignored by a queue
-	paused <queue-name> <key-name>
+	ignored <queue-name> <key-name>
  STATE - gets the number of pending jobs in a queue for every key (or for a specific key)
-	paused <queue-name> <key-name> [optional]
+	state <queue-name> <key-name> [optional]
+ MODE - gets the queue mode (FIFO/LIFO) for the queue key or for a specific key
+	mode <queue-name> <key-name> [optional]
+ ENQUEUE - push an item to a queue with a key
+	push <queue-name> <key-name> <item-content> <item-type> [json/string/number (default: string)]
  EXIT - exit the cli
 	exit
 ```
