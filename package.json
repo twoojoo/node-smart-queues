@@ -8,6 +8,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
+    "prepare": "npm run build",
     "build": "rm -rf ./dist && tsc"
   },
   "keywords": [
