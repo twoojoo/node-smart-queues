@@ -1,10 +1,12 @@
 import { Queue, redisStorage } from "../src"
-import { Redis } from "ioredis";
 
 (async function () {
-	const redis = new Redis({ host: "localhost", port: 6379 })
-
-	const q = new Queue<number>("q1", { storage: redisStorage(redis) })
+	const q = new Queue<number>("q1", { 
+		storage: redisStorage({ 
+			host: "localhost", 
+			port: 6379
+		}) 
+	})
 
 	q.start() 
 	q.pause() //pause untill a new start() is called

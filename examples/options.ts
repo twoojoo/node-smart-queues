@@ -1,11 +1,9 @@
 import { Queue, redisStorage } from "../src"
-import { Redis } from "ioredis";
 
 (async function () {
-	const redis = new Redis({ host: "localhost", port: 6379 })
-
-	const q = new Queue<number>("q1", { 
-		storage: redisStorage(redis), //default memory
+	
+	const q1 = new Queue<number>("q1", { 
+		storage: redisStorage({ host: "localhost", port: 6379 }), //default memory
 		logger: true, //defalut true
 		gzip: true, //default false
 		dequeueSize: 2, //default 1
@@ -23,7 +21,7 @@ import { Redis } from "ioredis";
 		mode: "LIFO", //default FIFO
 	})
 
-	q.key("k1", {
+	q1.key("k1", {
 		dequeueSize: 2,
 		onDequeue: async (i, k, q) => console.log("success k2:", i, k, q),
 		onDequeueAwait: false,
@@ -38,7 +36,7 @@ import { Redis } from "ioredis";
 	let count = 0
 	while (true) {
 		await new Promise(r => setTimeout(() => r(0), 1000))
-		await q.enqueue(`k1`, count)
+		await q1.enqueue(`k1`, count)
 		count++
 	}
 })()

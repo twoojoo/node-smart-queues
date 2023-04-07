@@ -1,9 +1,9 @@
 import { FileSystemStorage } from "./FileSystem"
 import { MemoryStorage } from "./Memory"
 import { RedisStorage } from "./Redis"
-import { Redis } from "ioredis"
+import { RedisOptions } from "ioredis"
 
-export function redisStorage(redis: Redis) {
+export function redisStorage(redis: RedisOptions) {
 	return (name: string) => new RedisStorage(name, redis)
 }
 

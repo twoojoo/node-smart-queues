@@ -1,14 +1,14 @@
 import { QueueItem, StoredCount } from "../types"
+import { Redis, RedisOptions } from "ioredis"
 import { Storage } from "./Storage"
-import { Redis } from "ioredis"
 
 export class RedisStorage extends Storage {
 	private redis: Redis
 	private keyHead: string
 
-	constructor(name: string, redis: Redis) {
+	constructor(name: string, redisOptions: RedisOptions) {
 		super(name)
-		this.redis = redis
+		this.redis = new Redis(redisOptions)
 		this.keyHead = "n§çs§çq-" + name
 	}
 
