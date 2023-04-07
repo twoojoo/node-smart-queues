@@ -6,9 +6,10 @@
 		<p align="center">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
   </p>
 	<br>
-		<div width="100%" align="center"><b>Crash safe</b></div>
+		<div width="100%" align="center"><b>Stateful (Redis, file system)</b></div>
+		<div width="100%" align="center"><b>Crash safe (automatic recovery)</b></div>
 		<div width="100%" align="center"><b>Job key based</b></div>
-		<div width="100%" align="center"><b>Scheduled jobs</b></div>
+		<div width="100%" align="center"><b>Timed dequeue</b></div>
 		<div width="100%" align="center"><b>Concurrent queues</b></div>
 		<div width="100%" align="center"><b>Priorities</b></div>
 		<div width="100%" align="center"><b>FIFO / LIFO</b></div>
