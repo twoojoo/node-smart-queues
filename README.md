@@ -4,19 +4,19 @@ A stateful queueu system for Node.js that focuses on versatility.
 
 ### Features
 
-- Stateful
-- Crash safe (recovery)
-- Job key based
-- Scheduled jobs
-- Concurrent queues
-- Priorities
-- Randomizable
-- FIFO / LIFO 
-- Queues pool
-- Compression
-- HTTP interface
-- CLI interface
-- Typescript first
+- **Stateful**
+- **Crash safe** (automatic recovery)
+- **Job key based**
+- **Scheduled jobs**
+- **Concurrent queues**
+- **Priorities**
+- **Randomizable**
+- **FIFO** / **LIFO** 
+- **Queues Pool**
+- **Compression**
+- **HTTP interface**
+- **CLI interface**
+- **Typescript first**
 
 ## Table of Contents
 - [Installation](#installation)
