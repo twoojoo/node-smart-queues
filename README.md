@@ -100,6 +100,11 @@ const queue = Queue<number>("my-queue", {
 
 ## Options
 
+Queue options can be of two types:
+
+- **Global**: valid for all job keys (ovveridden by single key-specific options)
+- **Key-spcific**: valid for a single key (override the correspondant global property)
+
 Here's an overview of all the options that can be set (both global and key-specific):
 
 ```typescript
