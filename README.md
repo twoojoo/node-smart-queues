@@ -1,6 +1,8 @@
-# Node Smart Queues
+<p align="center">
+  <img src="./images/logo_size_invert.jpg" />
+</p>
 
-A stateful queue system for Node.js that focuses on versatility and ease of use. 
+Node Smart Queues is a stateful queue system for Node.js that focuses on versatility and ease of use. 
 
 ### Features
 
