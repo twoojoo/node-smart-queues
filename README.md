@@ -8,7 +8,7 @@
 	- [File System Storage](#file-system-storage)
 	- [Redis Storage](#redis-storage)
 - [Options](#options)
-- [HTTP / CLI interface](#http-/-cli-interface)
+- [HTTP / CLI interface](#http--cli-interface)
 	- [Endpoints](#endpoints)
 	- [CLI commands](#cli-commands)
 
