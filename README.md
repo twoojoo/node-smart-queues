@@ -71,7 +71,7 @@ const queue = SmartQueue<number>("my-queue", {
 }).start();
 ```
 
-### Options
+## Options
 
 Here's an overview of all the options that can be set (both global and key-specific):
 
