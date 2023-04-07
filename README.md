@@ -37,7 +37,7 @@ Base package:
 npm install @twoojoo/node-smart-queues
 ```
 
-HTTP / CLI interface
+HTTP / CLI interface:
 
 ```bash
 npm install @twoojoo/node-smart-queues
