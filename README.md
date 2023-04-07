@@ -6,7 +6,7 @@
 		<p align="center" style="color:#B0BAC2;">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
   </p>
 	<br>
-	<h3 width="100%" style="text-align: center;">Features</h3>
+	<h3 width="100%" style="background-color: red text-align: center;">Features</h3>
 	<div width="100%" style="text-align: center;">Crash safe</div>
 	<div width="100%" style="text-align: center;">Job key based</div>
 	<div width="100%" style="text-align: center;">Scheduled jobs</div>
