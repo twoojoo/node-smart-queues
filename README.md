@@ -7,9 +7,9 @@
   </p>
 	<br>
 	<h3>Features</h3>
-	<p>Crash safe</p>
-	<p>Job key based</p>
-	<p>Scheduled jobs</p>
+	<div>Crash safe</div>
+	<div>Job key based</div>
+	<div>Scheduled jobs</div>
 	<p>Concurrent queues</p>
 	<p>Priorities</p>
 	<p>FIFO / LIFO</p>
