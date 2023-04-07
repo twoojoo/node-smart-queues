@@ -79,7 +79,7 @@ import { Queue, fileSystemStorage } from "@twoojoo/node-smart-queues"
 const queue = Queue<number>("my-queue", {
 	storage: fileSystemStorage("/path/to/file"),
 	dequeueInterval: 1000,
-	onDequeue: () => console.log(i))
+	onDequeue: i => console.log(i))
 }).start();
 ```
 
@@ -94,7 +94,7 @@ const queue = Queue<number>("my-queue", {
 	storage: redisStorage({ host: "localhost", port: 6379 }),
 	gzip: true,
 	dequeueInterval: 1000,
-	onDequeue: () => console.log(i))
+	onDequeue: i => console.log(i))
 }).start();
 ```
 
@@ -145,21 +145,14 @@ To interact with all the queues in the pool via the built-in HTTP/CLI interface,
 import { QueuesPool, Queue } from "@twoojoo/node-smart-queues"
 import { setupInterface } from "@twoojoo/node-smart-queues-interface"
 
-(async function () {
-	await setupInterface(QueuesPool, {
-		port: 3000, //default: 80
-		logger: true //default: false
-	})
+await setupInterface(QueuesPool, {
+	port: 3000, //default: 80
+	logger: true //default: false
+})
 
-	const q = Queue<string>("q1", {
-		onDequeue: (i) => console.log(i
-	}).start()
-
-	while(true) { //push 1 message every second
-		await new Promise(r => setTimeout(() => r(0), 1000))
-		await q.push(`k1`, "message")
-	}
-})()
+const q = Queue<string>("q1", {
+	onDequeue: i => console.log(i)
+}).start()
 ```
 
 ### Endpoints
