@@ -3,20 +3,19 @@
   <img src="./images/logo_size_invert.jpg" width="100%" />
   <br>
   <br>
-		<p align="center" style="color:#B0BAC2;">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
+		<p align="center" color="#B0BAC2">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
   </p>
 	<br>
-	<!-- <h3 width="100%" align="center"><b>Features</h3> -->
-	<div width="100%" align="center"><b>Crash safe</b></div>
-	<div width="100%" align="center"><b>Job key based</b></div>
-	<div width="100%" align="center"><b>Scheduled jobs</b></div>
-	<div width="100%" align="center"><b>Concurrent queues</b></div>
-	<div width="100%" align="center"><b>Priorities</b></div>
-	<div width="100%" align="center"><b>FIFO / LIFO</b></div>
-	<div width="100%" align="center"><b>Queues Pool</b></div>
-	<div width="100%" align="center"><b>Typescript first</b></div>
-	<div width="100%" align="center"><b>HTTP interface</b></div>
-	<div width="100%" align="center"><b>CLI</b></div>
+		<div width="100%" align="center"><b>Crash safe</b></div>
+		<div width="100%" align="center"><b>Job key based</b></div>
+		<div width="100%" align="center"><b>Scheduled jobs</b></div>
+		<div width="100%" align="center"><b>Concurrent queues</b></div>
+		<div width="100%" align="center"><b>Priorities</b></div>
+		<div width="100%" align="center"><b>FIFO / LIFO</b></div>
+		<div width="100%" align="center"><b>Queues Pool</b></div>
+		<div width="100%" align="center"><b>Typescript first</b></div>
+		<div width="100%" align="center"><b>HTTP interface</b></div>
+		<div width="100%" align="center"><b>CLI</b></div>
 	<br>
 </p>
 
