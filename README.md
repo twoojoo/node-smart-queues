@@ -3,7 +3,7 @@
   <img src="./images/logo_size_invert.jpg" width="100%" />
   <br>
   <br>
-		<p align="center" color="#B0BAC2">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
+		<p align="center">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
   </p>
 	<br>
 		<div width="100%" align="center"><b>Crash safe</b></div>
