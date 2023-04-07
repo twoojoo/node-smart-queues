@@ -40,7 +40,7 @@ npm install @twoojoo/node-smart-queues
 HTTP / CLI interface:
 
 ```bash
-npm install @twoojoo/node-smart-queues
+npm install @twoojoo/node-smart-queues-interface
 ```
 
 ## Basic usage
