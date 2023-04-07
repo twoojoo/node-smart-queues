@@ -14,9 +14,9 @@
 	<div width="100%" align="center"><b>Priorities</b></div>
 	<div width="100%" align="center"><b>FIFO / LIFO</b></div>
 	<div width="100%" align="center"><b>Queues Pool</b></div>
+	<div width="100%" align="center"><b>Typescript first</b></div>
 	<div width="100%" align="center"><b>HTTP interface</b></div>
 	<div width="100%" align="center"><b>CLI</b></div>
-	<div width="100%" align="center"><b>Typescript first</b></div>
 	<br>
 </p>
 
