@@ -1,8 +1,8 @@
 <p align="center" width="100%">
-  <img src="./images/logo_size.jpg" width="100%" />
+  <img src="./images/logo_size_invert.jpg" width="100%" />
 </p>
 
-<p align="center" style="color:#B0BAC2;">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use.<p>
+<p align="center" style="color:#B0BAC2;">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
 
 <br>
 
@@ -226,3 +226,7 @@ LIST - gets the names of the queues registered in the pool (comma separated)
  EXIT - exit the cli
 	exit
 ```
+
+<p align="center" width="100%">
+  <img src="./images/logo_size.jpg" width="100%" />
+</p>
