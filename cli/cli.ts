@@ -57,7 +57,7 @@ type Command = {
 
 async function testConnection(port: number) {
 	const res = await request("http://0.0.0.0:" + port + "/v1/ping")
-	if (await res.text() != "pong") throw Error("an error occurred during connection test")
+	if (await res?.text() != "pong") throw Error("an error occurred during connection test")
 } 
 
 async function request(url: string): Promise<Response> {

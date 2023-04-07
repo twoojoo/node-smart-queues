@@ -1,0 +1,16 @@
+{
+  "name": "node-smart-queues-cli",
+  "version": "1.0.0",
+  "description": "command-line interface for node-smart-queues",
+  "main": "dist/index.js",
+  "bin": {
+    "nsqcli": "node dist/index.js"
+  },
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "rm -rf ./dist && tsc"
+  },
+  "keywords": [],
+  "author": "twoojoo",
+  "license": "ISC"
+}

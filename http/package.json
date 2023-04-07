@@ -1,16 +1,16 @@
 {
   "name": "nsq-http",
   "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
+  "description": "http interface for node-smart-queues",
+  "main": "dist/http/index.js",
   "bin": {
     "nsq-cli": "node dist/interface/cli.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rm -rf ./dist && tsc"
   },
   "keywords": [],
-  "author": "",
+  "author": "twoojoo",
   "license": "ISC",
   "dependencies": {
     "as-table": "^1.0.55",

@@ -42,7 +42,7 @@ npm install @twoojoo/node-smart-queues
 HTTP / CLI interface:
 
 ```bash
-npm install @twoojoo/node-smart-queues-interface
+npm install node-smart-queues-interface
 ```
 
 ## Basic usage
@@ -50,7 +50,7 @@ npm install @twoojoo/node-smart-queues-interface
 This example shows a simple queue where enqueued jobs will be dequeued every second.
 
 ```typescript
-import { Queue } from "@twoojoo/node-smart-queues"
+import { Queue } from "node-smart-queues"
 
 const queue = Queue<number>("my-queue", {
 	logger: true,
@@ -74,7 +74,7 @@ Smart Queues use an in-memory storage system by default (not crash safe), but yo
 Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues. If the file already exists be sure it's empty on the first run.
 
 ```typescript
-import { Queue, fileSystemStorage } from "@twoojoo/node-smart-queues"
+import { Queue, fileSystemStorage } from "node-smart-queues"
 
 const queue = Queue<number>("my-queue", {
 	storage: fileSystemStorage("/path/to/file"),
@@ -88,7 +88,7 @@ const queue = Queue<number>("my-queue", {
 Will use Redis' lists as storage system. [ioredis](https://github.com/luin/ioredis) options must be provideded. If you think that the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
 
 ```typescript
-import { Queue, redisStorage } from "@twoojoo/node-smart-queues"
+import { Queue, redisStorage } from "node-smart-queues"
 
 const queue = Queue<number>("my-queue", {
 	storage: redisStorage({ host: "localhost", port: 6379 }),
@@ -142,8 +142,8 @@ q1.key("k1", {
 To interact with all the queues in the pool via the built-in HTTP/CLI interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
 
 ```typescript
-import { QueuesPool, Queue } from "@twoojoo/node-smart-queues"
-import { setupInterface } from "@twoojoo/node-smart-queues-interface"
+import { QueuesPool, Queue } from "node-smart-queues"
+import { setupInterface } from "node-smart-queues-interface"
 
 await setupInterface(QueuesPool, {
 	port: 3000, //default: 80
