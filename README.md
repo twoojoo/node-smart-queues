@@ -14,8 +14,8 @@
 		<div width="100%" align="center"><b>HTTP interface</b></div>
 		<div width="100%" align="center"><b>Job key based</b></div>
 		<div width="100%" align="center"><b>Queues Pool</b></div>
-		<div width="100%" align="center"><b>Priorities</b></div>
 		<div width="100%" align="center"><b>FIFO / LIFO</b></div>
+		<div width="100%" align="center"><b>Priorities</b></div>
 		<div width="100%" align="center"><b>CLI</b></div>
 	<br>
 </p>
