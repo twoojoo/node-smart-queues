@@ -37,7 +37,7 @@ npm install node-smart-queues
 
 ## Basic usage
 
-This example shows a simple queue where pushed jobs will come out every second.
+This example shows a simple queue where enqueued jobs will be dequeued every second.
 
 ```typescript
 import { SmartQueue } from "node-smart-queues"
