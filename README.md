@@ -110,9 +110,9 @@ q1.key("k1", {
 })
 ```
 
-## HTTP interface
+## HTTP / CLI interface
 
-To interact with all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
+To interact with all the queues in the pool via the built-in HTTP/CLI interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
 
 ```typescript
 import { QueuesPool, SmartQueue } from "nsq"
@@ -135,7 +135,7 @@ import { setupInterface } from "nsq-interface"
 })()
 ```
 
-### CLI interface
+### Endpoints
 
 A list of the available HTTP commands in curl syntax:
 
@@ -162,7 +162,7 @@ curl http://localhost:3000/v1/queue/<name>/ignored/<key>
 curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
 ```
 
-### CLI interface
+### CLI commands
 
 Allows to control queues both locally or remotely via the command line (default address is *0.0.0.0:80*). It requires the HTTP interface to be up and running.
 
