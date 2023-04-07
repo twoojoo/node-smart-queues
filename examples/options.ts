@@ -5,22 +5,22 @@ import { Redis } from "ioredis";
 	const redis = new Redis({ host: "localhost", port: 6379 })
 
 	const q = new Queue<number>("q1", { 
-		storage: redisStorage(redis),
-		logger: true,
-		gzip: true,
-		dequeueSize: 2,
+		storage: redisStorage(redis), //default memory
+		logger: true, //defalut true
+		gzip: true, //default false
+		dequeueSize: 2, //default 1
 		onDequeue: async (i, k, q) => console.log("success:", i, k, q),
-		onDequeueAwait: false,
-		priority: ["k2", "k3", "k4"],
+		onDequeueAwait: false, //default true
+		priority: ["k2", "k3", "k4"], 
 		ignore: ["k5"],
-		ignoreNotPrioritized: true,
-		randomPriority: false,
+		ignoreNotPrioritized: true, //default false
+		randomPriority: false, //default false 
 		ignoreItemCondition: i => i >= 12,
-		dequeueInterval: 2000,
-		maxRetry: 5,
+		dequeueInterval: 2000, //default 0
+		maxRetry: 5, //default 1 attempt
 		onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q),
-		onMaxRetryAwait: true,
-		mode: "LIFO",
+		onMaxRetryAwait: true, //default false
+		mode: "LIFO", //default FIFO
 	})
 
 	q.key("k1", {

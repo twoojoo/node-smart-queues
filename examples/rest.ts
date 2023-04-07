@@ -8,15 +8,11 @@ import { Redis } from "ioredis";
 	const redis = new Redis({ host: "localhost", port: 6379 })
 
 	const q = new Queue<number>("q1", { 
+		onDequeue: async (i) => console.log(i),
 		storage: redisStorage(redis),
-		gzip: true,
-		// dequeueInterval: ,
+		dequeueInterval: 2000,
 		onDequeueAwait: false,
-		onDequeue: async (i) => {
-			console.log(i)
-			// await new Promise((r) => setTimeout(() => r(0), 3000))
-			// console.log("WAITED 3 sec", i)
-		}
+		gzip: true,
 	}).start()
 
 	let count = 0
