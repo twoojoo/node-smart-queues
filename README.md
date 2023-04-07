@@ -71,32 +71,9 @@ const queue = SmartQueue<number>("my-queue", {
 }).start();
 ```
 
-## HTTP interface
-
-To interact with all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
-
-```typescript
-import { QueuesPool, SmartQueue } from "nsq"
-import { setupInterface } from "nsq-interface"
-
-(async function () {
-	await setupInterface(QueuesPool, {
-		port: 3000, //default: 80
-		logger: true //default: false
-	})
-
-	const q = SmartQueue<string>("q1", {
-		onDequeue: (i) => console.log(i
-	}).start()
-
-	while(true) { //push 1 message every second
-		await new Promise(r => setTimeout(() => r(0), 1000))
-		await q.push(`k1`, "message")
-	}
-})()
-```
-
 ### Options
+
+Here's an overview of all the options that can be set (both global and key-specific):
 
 ```typescript
 // global options
@@ -133,7 +110,32 @@ q1.key("k1", {
 })
 ```
 
-### HTTP interface
+## HTTP interface
+
+To interact with all the queues in the pool via the built-in HTTP interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
+
+```typescript
+import { QueuesPool, SmartQueue } from "nsq"
+import { setupInterface } from "nsq-interface"
+
+(async function () {
+	await setupInterface(QueuesPool, {
+		port: 3000, //default: 80
+		logger: true //default: false
+	})
+
+	const q = SmartQueue<string>("q1", {
+		onDequeue: (i) => console.log(i
+	}).start()
+
+	while(true) { //push 1 message every second
+		await new Promise(r => setTimeout(() => r(0), 1000))
+		await q.push(`k1`, "message")
+	}
+})()
+```
+
+### CLI interface
 
 A list of the available HTTP commands in curl syntax:
 
