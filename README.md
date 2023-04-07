@@ -18,24 +18,6 @@
 	<p>CLI</p>
 	<p>Typescript first</p>
 </p>
-<!-- 
-
-### Features
-
-- **Stateful** (Redis, file system)
-- **Crash safe** (automatic recovery)
-- **Job key based**
-- **Job retry**
-- **Scheduled jobs**
-- **Concurrent queues**
-- **Priorities**
-- **Randomizable**
-- **FIFO** / **LIFO** 
-- **Queues Pool**
-- **Compression** (gzip)
-- **HTTP interface**
-- **CLI interface**
-- **Typescript first** -->
 
 ## Table of Contents
 - [Installation](#installation)
