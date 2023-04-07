@@ -10,7 +10,7 @@
 - [Options](#options)
 - [HTTP / CLI interface](#http-cli-interface)
 	- [Endpoints](#endpoints)
-	- [CLI commands](#cli-clommands)
+	- [CLI commands](#cli-commands)
 
 ## Features
 
