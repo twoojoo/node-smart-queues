@@ -6,17 +6,17 @@
 		<p align="center" style="color:#B0BAC2;">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
   </p>
 	<br>
-	<h3 width="100%" style="background-color: red text-align: center;">Features</h3>
-	<div width="100%" style="text-align: center;">Crash safe</div>
-	<div width="100%" style="text-align: center;">Job key based</div>
-	<div width="100%" style="text-align: center;">Scheduled jobs</div>
-	<div width="100%" style="text-align: center;">Concurrent queues</div>
-	<div width="100%" style="text-align: center;">Priorities</div>
-	<div width="100%" style="text-align: center;">FIFO / LIFO</div>
-	<div width="100%" style="text-align: center;">Queues Pool</div>
-	<div width="100%" style="text-align: center;">HTTP interface</div>
-	<div width="100%" style="text-align: center;">CLI</div>
-	<div width="100%" style="text-align: center;">Typescript first</div>
+	<h3 width="100%" align="center">Features</h3>
+	<div width="100%" align="center">Crash safe</div>
+	<div width="100%" align="center">Job key based</div>
+	<div width="100%" align="center">Scheduled jobs</div>
+	<div width="100%" align="center">Concurrent queues</div>
+	<div width="100%" align="center">Priorities</div>
+	<div width="100%" align="center">FIFO / LIFO</div>
+	<div width="100%" align="center">Queues Pool</div>
+	<div width="100%" align="center">HTTP interface</div>
+	<div width="100%" align="center">CLI</div>
+	<div width="100%" align="center">Typescript first</div>
 </p>
 
 ## Table of Contents
