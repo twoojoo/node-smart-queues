@@ -227,6 +227,7 @@ LIST - gets the names of the queues registered in the pool (comma separated)
 	exit
 ```
 
+<br>
 <p align="center" width="100%">
   <img src="./images/logo_size.jpg" width="100%" />
 </p>
