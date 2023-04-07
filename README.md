@@ -6,8 +6,8 @@
 		<p align="center">A stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
   </p>
 	<br>
-		<div width="100%" align="center"><b>Stateful (Redis, file system)</b></div>
 		<div width="100%" align="center"><b>Crash safe (automatic recovery)</b></div>
+		<div width="100%" align="center"><b>Stateful (Redis, file system)</b></div>
 		<div width="100%" align="center"><b>Concurrent queues</b></div>
 		<div width="100%" align="center"><b>Timed dequeue</b></div>
 		<div width="100%" align="center"><b>Typescript first</b></div>
