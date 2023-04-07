@@ -6,8 +6,19 @@
 		<p align="center" style="color:#B0BAC2;">A solid stateful queue system for Node.js<br>that focuses on versatility and ease of use<p>
   </p>
 	<br>
+	<h3>Features</h3>
+	<p>Crash safe</p>
+	<p>Job key based</p>
+	<p>Scheduled jobs</p>
+	<p>Concurrent queues</p>
+	<p>Priorities</p>
+	<p>FIFO / LIFO</p>
+	<p>Queues Pool</p>
+	<p>HTTP interface</p>
+	<p>CLI</p>
+	<p>Typescript first</p>
 </p>
-
+<!-- 
 
 ### Features
 
@@ -24,7 +35,7 @@
 - **Compression** (gzip)
 - **HTTP interface**
 - **CLI interface**
-- **Typescript first**
+- **Typescript first** -->
 
 ## Table of Contents
 - [Installation](#installation)
