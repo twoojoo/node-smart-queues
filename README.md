@@ -1,16 +1,6 @@
 # Node Smart Queues
 
-## Table of Contents
-- [Features](#features)
-- [Installation](#installation)
-- [Basic usage](#basic-usage)
-- [Stateful](#stateful)
-	- [File System Storage](#file-system-storage)
-	- [Redis Storage](#redis-storage)
-- [Options](#options)
-- [HTTP / CLI interface](#http--cli-interface)
-	- [Endpoints](#endpoints)
-	- [CLI commands](#cli-commands)
+**Node Smart Queues** is a stateful queueu system for Node.js that focuses on versatility. 
 
 ## Features
 
@@ -27,6 +17,17 @@
 - HTTP interface
 - CLI interface
 - Typescript first
+
+## Table of Contents
+- [Installation](#installation)
+- [Basic usage](#basic-usage)
+- [Stateful](#stateful)
+	- [File System Storage](#file-system-storage)
+	- [Redis Storage](#redis-storage)
+- [Options](#options)
+- [HTTP / CLI interface](#http--cli-interface)
+	- [Endpoints](#endpoints)
+	- [CLI commands](#cli-commands)
 
 ## Installation
 
