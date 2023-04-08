@@ -60,22 +60,6 @@ async function testConnection(port: number) {
 	if (await res?.text() != "pong") throw Error("an error occurred during connection test")
 } 
 
-async function request(url: string): Promise<Response> {
-	const log = console.error
-	try {
-		console.log("\x1b[2mfetching", "'" + url + "'...\x1b[0m")
-		console.error = () => {}
-		const response = await fetch(url)
-		console.error = log
-		return response
-	} catch (err) {
-		console.error = log
-		console.log(err)
-		// console.error("an error occurred")
-		// return 
-	}
-}
-
 function commands(url: string): { [name: string]: Command } {
 	return {
 		list: {
