@@ -22,7 +22,7 @@
 
 <br>
 
-## Table of Contents
+### Table of Contents
 - [Installation](#installation)
 - [Basic usage](#basic-usage)
 - [Stateful](#stateful)
