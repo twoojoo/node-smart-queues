@@ -223,7 +223,7 @@ queue.getStorageCount()
 
 ## HTTP / CLI interface
 
-To interact with all the queues in the pool via the built-in HTTP/CLI interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the **nsqcli**.
+To interact with all the queues in the pool via the built-in HTTP/CLI interface, you have to import the server builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify](https://github.com/fastify/fastify) server that exposes some useful endpoints. It will also allow to control the queues via the **nsqcli**.
 
 ```bash
 npm i node-smart-queues-http
@@ -271,6 +271,8 @@ curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
 ```
 
 ### CLI commands
+
+> **Note**: the **nsqcli** can be installed as a standalone application on a different machine to remotely control the queues
 
 ```bash
 npm i -g node-smart-queues-cli
