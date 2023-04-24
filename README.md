@@ -28,8 +28,8 @@
 - [Stateful](#stateful)
 	- [File System Storage](#file-system-storage)
 	- [Redis Storage](#redis-storage)
-- [Options](#options)
-- [Methods](#methods)
+- [Queue options](#queue-options)
+- [Queue methods](#queue-methods)
 - [HTTP / CLI interface](#http--cli-interface)
 	- [Endpoints](#endpoints)
 	- [CLI commands](#cli-commands)
@@ -98,7 +98,7 @@ const queue = Queue<number>("my-queue", {
 }).start();
 ```
 
-## Options
+## Queue options
 
 Queue options can be of two types:
 
@@ -142,7 +142,7 @@ q1.key("k1", {
 })
 ```
 
-## Methods
+## Queue methods
 
 Here's an overview of all the available queue methods:
 
