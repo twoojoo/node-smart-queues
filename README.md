@@ -149,11 +149,11 @@ Here's an overview of all the available queue methods:
 ```typescript
 // (async) push an item to the queue 
 queue.enqueue("my-key", 3, { throwErrors: false /*default true*/}) 
-/* return type: {
+/* returns: {
 	enqueued: boolean (tells if the item was acutally enqueued)
 	message: string (tells why an item wasn't actually enqueued)
 	error?: Error (js error object if throwErrors option is false)
-	code: number (enqueu result code) 
+	code: number (enqueue result code) 
 		0 = item enqueued
 		1 = key is ignored
 		2 = key not prioritized (only with ignoreNotPrioritized option)
