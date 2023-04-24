@@ -125,7 +125,7 @@ const q1 = new Queue<number>("q1", {
 	ignoreNotPrioritized: true, //default false
 	randomPriority: false, //default false
 	ignoreItemCondition: i => i >= 12,
-	dequeueInterval: 2000, //default 0
+	dequeueInterval: 2000, //run a dequeue every 2secs (default 0)
 	maxRetry: 5, //max onDequeue attempts (default 1 - no errors allowed)
 	onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q), //if last retry errored
 	onMaxRetryAwaited: true, //default true
