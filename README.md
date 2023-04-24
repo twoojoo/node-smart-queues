@@ -39,12 +39,6 @@ Base package:
 npm install @twoojoo/node-smart-queues
 ```
 
-HTTP / CLI interface:
-
-```bash
-npm install node-smart-queues-interface
-```
-
 ## Basic usage
 
 This example shows a simple queue where enqueued jobs will be dequeued every second.
@@ -144,7 +138,11 @@ q1.key("k1", {
 
 ## HTTP / CLI interface
 
-To interact with all the queues in the pool via the built-in HTTP/CLI interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the nsq-cli.
+To interact with all the queues in the pool via the built-in HTTP/CLI interface, you have to import the interface builder and pass the QueuePool object to it, along with some options. It will automatically setup a [fastify]() server that exposes some useful endpoints. It will also allow to control the queues via the **nsqcli**.
+
+```bash
+npm i node-smart-queues-http
+```
 
 ```typescript
 import { QueuesPool, Queue } from "node-smart-queues"
@@ -189,10 +187,14 @@ curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
 
 ### CLI commands
 
+```bash
+npm i -g node-smart-queues-cli
+```
+
 Allows to control queues both locally or remotely via the command line (default address is *0.0.0.0:80*). It requires the HTTP interface to be up and running.
 
 ```bash
-nsq-cli <address>
+nsqcli <address>
 ```
 
 Type *help* in the cli to get the list of all available commands.
