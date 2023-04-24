@@ -6,6 +6,7 @@
 		<p align="center">A stateful queue system for Node.js<br>that focuses on <b>versatility</b>, <b>control</b> and <b>ease of use</b><p>
   </p>
 	<br>
+		<div width="100%" align="center">Features:</b></div>
 		<div width="100%" align="center"><b>Crash safe (automatic recovery)</b></div>
 		<div width="100%" align="center"><b>Stateful (Redis, file system)</b></div>
 		<div width="100%" align="center"><b>Concurrent queues</b></div>
