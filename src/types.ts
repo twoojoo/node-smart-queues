@@ -64,7 +64,7 @@ export type PushOptions = {
 }
 
 export type PushResult = {
-	pushed: boolean
+	enqueued: boolean
 	message?: string
 	error?: Error
 }

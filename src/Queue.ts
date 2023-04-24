@@ -218,12 +218,12 @@ export class Queue<T = any> {
 
 			//check if the key is to be ignored
 			if (this.globalRules.ignore?.includes(key)) 
-				return { pushed: false, message: `key "${key}" is ignored by the queue` }
+				return { enqueued: false, message: `key "${key}" is ignored by the queue` }
 
 			//check if the key is not prioritized and should be skipped
 			if (this.globalRules.ignoreNotPrioritized) 
 				if (!this.globalRules.priority.includes(key))
-					return { pushed: false, message: `key "${key}" is not prioritized` }
+					return { enqueued: false, message: `key "${key}" is not prioritized` }
 
 			if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 
@@ -235,19 +235,19 @@ export class Queue<T = any> {
 
 			if (ignoreItemCondition)
 				if (ignoreItemCondition(item))
-					return { pushed: false, }
+					return { enqueued: false, message: `item for key "${key}" doesn't satisfy the condition` }
 
 			await this.pushItemInStorage(key, item, pushTimestamp)
 
 			this.loopLocked = false
 			this.startLoop()
-			return { pushed: true }
+			return { enqueued: true }
 
 		} catch (error) {
 			if (options.throwErrors !== false) throw error
 			else return {
-				pushed: false,
-				message: "an error has occurred",
+				enqueued: false,
+				message: "an error occurred",
 				error
 			}
 		}
@@ -302,13 +302,13 @@ export class Queue<T = any> {
 
 	/**Ignores items pushed for the provided keys (dosen't override previously ignored key)
 	 * @param keys - provide a list of keys (key * is forbidden)*/
-	ignoreKeys(keys: string[] | string) {
+	ignoreKeys(...keys: string[]) {
 		if (Array.isArray(keys)) this.globalRules.ignore = Array.from(new Set(this.globalRules.ignore.concat(keys)))
 		else this.globalRules.ignore = Array.from(new Set(this.globalRules.ignore.concat([keys])))
 		return this
 	} 
 
-	restoreKeys(keys: string[] | string) {
+	restoreKeys(...keys: string[]) {
 		if (Array.isArray(keys)) this.globalRules.ignore = this.globalRules.ignore.filter(k => !keys.includes(k))
 		else this.globalRules.ignore = this.globalRules.ignore.filter(k => keys == k)
 		return this

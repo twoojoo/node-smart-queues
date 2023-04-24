@@ -29,6 +29,7 @@
 	- [File System Storage](#file-system-storage)
 	- [Redis Storage](#redis-storage)
 - [Options](#options)
+- [Methods](#methods)
 - [HTTP / CLI interface](#http--cli-interface)
 	- [Endpoints](#endpoints)
 	- [CLI commands](#cli-commands)
@@ -140,6 +141,42 @@ q1.key("k1", {
 	mode: "FIFO",
 })
 ```
+
+## Methods
+
+Here's an overview of all the available queue methods:
+
+```typescript
+// (async) push an item to the queue 
+queue.enqueue("my-key", 3, { throwErrors: false /*default true*/}) 
+/* return type: {
+	enqueued: boolean (tells if the item was acutally enqueued)
+	message?: string (tells why an item wasn't actually enqueued)
+	error?: Error (js error object if throwErrors option is false)
+} */
+
+//flow control
+queue.pause() //pause the queue until a start command
+queue.pause(5000) //pause the queue for 5000ms
+queue.isPaused() // true/false
+
+//keys status
+queue.ignoreKeys("key-1", "key-2" /*....*/) // starts to ignore provided keys
+queue.restoreKeys("key-1", "key-2" /*....*/) // restart to consider provided keys
+queue.isKeyIgnored("key-1") //true/false
+
+//misc
+queue.getName() //returns the queue name
+queue.getDequeueMode() // FIFO/LIFO (global)
+queue.getDequeueMode("key-1") // FIFO/LIFO (key specific)
+queue.getStorageCount() // (async) returns the number of stored items for every known key
+/*returns: {
+	"key-1": 12,
+	"key-2": 34,
+	..etc..
+}*/
+```
+
 
 ## HTTP / CLI interface
 
