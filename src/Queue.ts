@@ -6,19 +6,20 @@ import { gzip, ungzip } from "node-gzip"
 import { shuffleArray } from "./utils"
 
 import {
-	ExecCallback, 
-	KeyOptions,
 	OnMaxRetryCallback,
-	PushOptions, 
-	PushResult, 
-	QueueItem,
+	EnqueueResultCode,
 	QueueItemParsed,
-	QueueMode,
+	EnqueueOptions, 
+	EnqueueResult, 
+	GlobalOptions,
+	ExecCallback, 
 	QueueOptions, 
 	GlobalRules, 
-	KeyRules, 
 	StoredCount, 
-	GlobalOptions
+	KeyOptions,
+	QueueItem,
+	QueueMode,
+	KeyRules, 
 } from "./types"
 
 
@@ -194,7 +195,6 @@ export class Queue<T = any> {
 		return this
 	}
 
-
 	/** Pause the queue (pause indefinitely if timer is not provided)
 	 * @param timer - set a timer for the queue restart (calls start() after the timer has expiret)*/
 	pause(timer?: number) {
@@ -212,18 +212,26 @@ export class Queue<T = any> {
 	 * @param item - item to be pushed in the queue
 	 * @returns true if the item wasn't ignored by the queue
 	 * */
-	async enqueue(key: string, item: T, options: PushOptions = {}): Promise<PushResult> {
+	async enqueue(key: string, item: T, options: EnqueueOptions = {}): Promise<EnqueueResult> {
 		try {
 			const pushTimestamp = Date.now()
 
 			//check if the key is to be ignored
 			if (this.globalRules.ignore?.includes(key)) 
-				return { enqueued: false, message: `key "${key}" is ignored by the queue` }
+				return { 
+					enqueued: false, 
+					code: EnqueueResultCode.KeyIgnored,
+					message: `key "${key}" is ignored by the queue` 
+				}
 
 			//check if the key is not prioritized and should be skipped
 			if (this.globalRules.ignoreNotPrioritized) 
 				if (!this.globalRules.priority.includes(key))
-					return { enqueued: false, message: `key "${key}" is not prioritized` }
+					return { 
+						enqueued: false, 
+						code: EnqueueResultCode.KeyNotPrioritized,
+						message: `key "${key}" is not prioritized`
+					}
 
 			if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 
@@ -235,18 +243,26 @@ export class Queue<T = any> {
 
 			if (ignoreItemCondition)
 				if (ignoreItemCondition(item))
-					return { enqueued: false, message: `item for key "${key}" doesn't satisfy the condition` }
+					return { 
+						enqueued: false, 
+						code: EnqueueResultCode.MissingCondition,
+						message: `item for key "${key}" doesn't satisfy the condition`
+					}
 
 			await this.pushItemInStorage(key, item, pushTimestamp)
 
 			this.loopLocked = false
 			this.startLoop()
-			return { enqueued: true }
+			return { 
+				enqueued: true, 
+				code: EnqueueResultCode.Enqueued
+			}
 
 		} catch (error) {
 			if (options.throwErrors !== false) throw error
 			else return {
 				enqueued: false,
+				code: EnqueueResultCode.ErrorOccurred,
 				message: "an error occurred",
 				error
 			}

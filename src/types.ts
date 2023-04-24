@@ -1,6 +1,14 @@
 import { Queue } from "./Queue"
 import { Storage } from "./storage/Storage"
 
+export enum EnqueueResultCode {
+	Enqueued = 0,
+	KeyIgnored = 1,
+	KeyNotPrioritized = 2,
+	MissingCondition = 3,
+	ErrorOccurred = 3,
+}
+
 export type QueueOptions<T> = QueueBasicOptions & KeyOptions<T> & {
 	priority?: string[],
 	ignore?: string[],
@@ -59,12 +67,13 @@ export type PriorityOptions = {
 	ignoreNotPrioritized?: boolean
 }
 
-export type PushOptions = {
+export type EnqueueOptions = {
 	throwErrors?: boolean
 }
 
-export type PushResult = {
+export type EnqueueResult = {
 	enqueued: boolean
+	code: EnqueueResultCode,
 	message?: string
 	error?: Error
 }
