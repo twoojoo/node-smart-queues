@@ -173,7 +173,7 @@ queue.enqueue("my-key", 3, { throwErrors: false /*default true*/})
 ### Flow control
 
 ```typescript
-//pause the queue until a start command
+//pause the queue until the start command is triggered
 queue.pause() 
 
 //pause the queue for 5000ms
