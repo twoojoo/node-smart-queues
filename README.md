@@ -20,6 +20,8 @@
 	<br>
 </p>
 
+<br>
+
 ## Table of Contents
 - [Installation](#installation)
 - [Basic usage](#basic-usage)
@@ -30,6 +32,9 @@
 - [HTTP / CLI interface](#http--cli-interface)
 	- [Endpoints](#endpoints)
 	- [CLI commands](#cli-commands)
+
+
+<br>
 
 ## Installation
 
