@@ -30,6 +30,10 @@
 	- [Redis Storage](#redis-storage)
 - [Queue options](#queue-options)
 - [Queue methods](#queue-methods)
+	- [Enqueue](#enqueue)
+	- [Flow control](#flow-control)
+	- [Keys status](#keys-status)
+	- [Miscellaneous](#miscellaneous)
 - [HTTP / CLI interface](#http--cli-interface)
 	- [Endpoints](#endpoints)
 	- [CLI commands](#cli-commands)
@@ -146,8 +150,10 @@ q1.key("k1", {
 
 Here's an overview of all the available queue methods:
 
+### Enqueue
+
 ```typescript
-// (async) push an item to the queue 
+//(async) push an item to the queue 
 queue.enqueue("my-key", 3, { throwErrors: false /*default true*/}) 
 /* returns: {
 	enqueued: boolean (tells if the item was acutally enqueued)
@@ -160,24 +166,50 @@ queue.enqueue("my-key", 3, { throwErrors: false /*default true*/})
 		3 = missing condition (only with ignoreItemCondition option)
 		4 = an error occurred
 } */
+```
 
-//flow control
-queue.pause() //pause the queue until a start command
-queue.pause(5000) //pause the queue for 5000ms
-queue.isPaused() // true/false
+### Flow control
 
-//keys status
-queue.ignoreKeys("key-1", "key-2" /*....*/) // starts to ignore provided keys
-queue.restoreKeys("key-1", "key-2" /*....*/) // restart to consider provided keys
-queue.isKeyIgnored("key-1") //true/false
+```typescript
+//pause the queue until a start command
+queue.pause() 
 
-//misc
-queue.getName() //returns the queue name
-queue.options({/*..options..*/}) //ovverride options after queue creation
-queue.getDequeueMode() // FIFO/LIFO (global)
-queue.getDequeueMode("key-1") // FIFO/LIFO (key specific)
+//pause the queue for 5000ms
+queue.pause(5000) 
 
-// (async) returns the number of stored items for every known key
+//true/false
+queue.isPaused() 
+```
+
+### Key status
+
+```typescript
+//starts to ignore provided keys
+queue.ignoreKeys("key-1", "key-2" /*....*/) 
+
+//restart to consider provided keys
+queue.restoreKeys("key-1", "key-2" /*....*/) 
+
+//true/false
+queue.isKeyIgnored("key-1")
+```
+
+## Miscellaneous
+
+```typescript
+//returns the queue name
+queue.getName() 
+
+//ovverride options after queue creation
+queue.options({/*..global options..*/}) 
+
+//tells if the mode is FIFO/LIFO (global)
+queue.getDequeueMode() 
+
+//tells if the mode is FIFO/LIFO (key specific)
+queue.getDequeueMode("key-1")
+
+//(async) returns the number of stored items for every known key
 queue.getStorageCount() 
 /*returns: {
 	"key-1": 12,
