@@ -152,10 +152,10 @@ export class Queue<T = any> {
 					for (let item of items) {
 						const pItem = await this.parseQueueItem(item)
 						// get the correct calòback to execute (and if must be awaited or not)
-						if (keyRules.onDequeue && !keyRules.onDequeueAwait) this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
-						else if (keyRules.onDequeue && keyRules.onDequeueAwait) await this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
-						else if (this.globalRules.onDequeue && !this.globalRules.onDequeueAwait) await this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
-						else if (this.globalRules.onDequeue && this.globalRules.onDequeueAwait) this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
+						if (keyRules.onDequeue && !keyRules.onDequeueAwaited) this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
+						else if (keyRules.onDequeue && keyRules.onDequeueAwaited) await this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
+						else if (this.globalRules.onDequeue && !this.globalRules.onDequeueAwaited) await this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
+						else if (this.globalRules.onDequeue && this.globalRules.onDequeueAwaited) this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
 					}
 
 					// unlock the loop only if there the 
@@ -273,10 +273,10 @@ export class Queue<T = any> {
 
 		if (this.keyRules[key].onMaxRetry) {
 			onMaxRetryCallback = this.keyRules[key].onMaxRetry
-			awaitMaxRetryCallback = this.keyRules[key].onMaxRetryAwait === false ? false : true
+			awaitMaxRetryCallback = this.keyRules[key].onMaxRetryAwaited === false ? false : true
 		} else if (this.globalRules.onMaxRetry) {
 			onMaxRetryCallback = this.globalRules.onMaxRetry
-			awaitMaxRetryCallback = this.globalRules.onMaxRetryAwait === false ? false : true
+			awaitMaxRetryCallback = this.globalRules.onMaxRetryAwaited === false ? false : true
 		} else { 
 			onMaxRetryCallback = ((_, error) => { throw error })
 			awaitMaxRetryCallback = true

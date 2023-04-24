@@ -46,9 +46,9 @@ export type KeyRules<T> = {
 	ignoreItemCondition?: IgnoreItemCondition<T>
 	maxRetry?: number
 	onMaxRetry?: OnMaxRetryCallback<T>
-	onMaxRetryAwait?: boolean
+	onMaxRetryAwaited?: boolean
 	onDequeue?: OnPop<T>
-	onDequeueAwait?: boolean
+	onDequeueAwaited?: boolean
 	dequeueInterval?: number
 	dequeueSize?: number
 }

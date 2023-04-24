@@ -8,7 +8,7 @@ import { nsqServer } from "../http";
 		onDequeue: async (i) => console.log(i),
 		storage: redisStorage({ host: "localhost", port: 6379 }),
 		dequeueInterval: 2000,
-		onDequeueAwait: false,
+		onDequeueAwaited: false,
 		gzip: true,
 	}).start()
 
