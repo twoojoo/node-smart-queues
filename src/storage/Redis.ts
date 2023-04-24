@@ -9,6 +9,7 @@ export class RedisStorage extends Storage {
 	constructor(name: string, redisOptions: RedisOptions) {
 		super(name)
 		this.redis = new Redis(redisOptions)
+		this.redis.on("error", (err) => { throw err })
 		this.keyHead = "n§çs§çq-" + name
 	}
 
@@ -43,7 +44,7 @@ export class RedisStorage extends Storage {
 
 		const keys = await this.redis.keys(this.keyHead + "*")
 
-		for (const key of keys ) {
+		for (const key of keys) {
 			if (!key.startsWith(this.keyHead)) continue
 			storedCount[this.getItemKey(key)] = await this.redis.llen(key)
 		}
