@@ -36,7 +36,7 @@
 Base package:
 
 ```bash
-npm install @twoojoo/node-smart-queues
+npm install node-smart-queues
 ```
 
 ## Basic usage
