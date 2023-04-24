@@ -1,7 +1,7 @@
 {
   "name": "node-smart-queues",
   "version": "0.0.1",
-  "description": "A stateful queue system for Node.js that focuses on versatility and ease of use",
+  "description": "A stateful queue system for Node.js that focuses on versatility, control and ease of use",
   "repository": {
     "type": "git",
     "url": "https://github.com/twoojoo/node-smart-queues"
