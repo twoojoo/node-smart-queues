@@ -295,7 +295,7 @@ export class Queue<T = any> {
 			onMaxRetryCallback = this.globalRules.onMaxRetry
 			awaitMaxRetryCallback = this.globalRules.onMaxRetryAwaited === false ? false : true
 		} else { 
-			onMaxRetryCallback = ((_, error) => { throw error })
+			onMaxRetryCallback = (error => { throw error })
 			awaitMaxRetryCallback = true
 		}
 		

@@ -115,19 +115,19 @@ Here's an overview of all the available queue options:
 // global options
 const q1 = new Queue<number>("q1", { 
 	storage: redisStorage({ host: "localhost", port: 6379 }), //default memory
-	logger: true, //defalut true
-	gzip: true, //default false
-	dequeueSize: 2, //default 1
+	logger: true, //toggle the logger (defalut true)
+	gzip: true, //toggle gzip compression (default false)
+	dequeueSize: 2, //set nuber of item per dequeue (default 1)
 	onDequeue: async (i, k, q) => console.log("success:", i, k, q),
 	onDequeueAwaited: false, //default true
-	priority: ["k2", "k3", "k4"], 
+	priority: ["k2", "k3", "k4"], //higher to lower
 	ignore: ["k5"],
 	ignoreNotPrioritized: true, //default false
-	randomPriority: false, //default false 
+	randomPriority: false, //default false
 	ignoreItemCondition: i => i >= 12,
 	dequeueInterval: 2000, //default 0
-	maxRetry: 5, //default 1 attempt
-	onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q),
+	maxRetry: 5, //max onDequeue attempts (default 1 - no errors allowed)
+	onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q), //if last retry errored
 	onMaxRetryAwaited: true, //default true
 	mode: "LIFO", //default FIFO
 })
@@ -196,7 +196,7 @@ queue.restoreKeys("key-1", "key-2" /*....*/)
 queue.isKeyIgnored("key-1")
 ```
 
-## Miscellaneous
+### Miscellaneous
 
 ```typescript
 //returns the queue name
