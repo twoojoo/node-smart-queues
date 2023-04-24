@@ -173,9 +173,12 @@ queue.isKeyIgnored("key-1") //true/false
 
 //misc
 queue.getName() //returns the queue name
+queue.options({/*..options..*/}) //ovverride options after queue creation
 queue.getDequeueMode() // FIFO/LIFO (global)
 queue.getDequeueMode("key-1") // FIFO/LIFO (key specific)
-queue.getStorageCount() // (async) returns the number of stored items for every known key
+
+// (async) returns the number of stored items for every known key
+queue.getStorageCount() 
 /*returns: {
 	"key-1": 12,
 	"key-2": 34,
