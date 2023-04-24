@@ -165,6 +165,8 @@ queue.enqueue("my-key", 3, { throwErrors: false /*default true*/})
 		2 = key not prioritized (only with ignoreNotPrioritized option)
 		3 = missing condition (only with ignoreItemCondition option)
 		4 = an error occurred
+
+		note: case 1,2 and 3 won't cause an error
 } */
 ```
 
