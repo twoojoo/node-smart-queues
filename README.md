@@ -176,7 +176,7 @@ queue.enqueue("my-key", 3, { throwErrors: false /*default true*/})
 //pause the queue until the start command is triggered
 queue.pause() 
 
-//pause the queue for 5000ms
+//pause the queue for 5000ms (or until a start command)
 queue.pause(5000) 
 
 //true/false
