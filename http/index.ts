@@ -20,8 +20,7 @@ export function nsqServer(pool: QueuePool, options: NsqHttpOptions = {}): Promis
 		const host = "0.0.0.0"
 		const port = options.port || 80
 
-		getRoutes(pool)
-			.forEach(r => nsqServer.route(r))
+		getRoutes(pool).forEach(r => nsqServer.route(r))
 
 		nsqServer.listen({ host, port }, (err, addr) => {
 			if (err) reject(err)

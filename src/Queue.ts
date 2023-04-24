@@ -1,10 +1,26 @@
-import { CallbackOptions, ExecCallback, IgnoreItemCondition, KeyOptions, OnMaxRetryCallback, OnPushCallback, PriorityOptions, PushOptions, PushResult, QueueItem, QueueItemParsed, QueueMode, QueueOptions, GlobalRules, KeyRules, StoredCount, GlobalOptions } from "./types"
 import { DEFAULT_SHIFT_RATE } from "./constants"
 import { inMemoryStorage } from "./storage"
 import { Storage } from "./storage/Storage"
 import { registerNewQueue } from "./pool"
 import { gzip, ungzip } from "node-gzip"
 import { shuffleArray } from "./utils"
+
+import {
+	ExecCallback, 
+	KeyOptions,
+	OnMaxRetryCallback,
+	PushOptions, 
+	PushResult, 
+	QueueItem,
+	QueueItemParsed,
+	QueueMode,
+	QueueOptions, 
+	GlobalRules, 
+	KeyRules, 
+	StoredCount, 
+	GlobalOptions
+} from "./types"
+
 
 export class Queue<T = any> {
 	// static options
