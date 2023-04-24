@@ -255,6 +255,7 @@ export class Queue<T = any> {
 			this.startLoop()
 			return { 
 				enqueued: true, 
+				message: `item enqueued for key "${key}"`,
 				code: EnqueueResultCode.Enqueued
 			}
 
@@ -263,7 +264,7 @@ export class Queue<T = any> {
 			else return {
 				enqueued: false,
 				code: EnqueueResultCode.ErrorOccurred,
-				message: "an error occurred",
+				message: `an error occurred for key "${key}"`,
 				error
 			}
 		}

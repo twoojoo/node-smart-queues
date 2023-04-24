@@ -151,8 +151,14 @@ Here's an overview of all the available queue methods:
 queue.enqueue("my-key", 3, { throwErrors: false /*default true*/}) 
 /* return type: {
 	enqueued: boolean (tells if the item was acutally enqueued)
-	message?: string (tells why an item wasn't actually enqueued)
+	message: string (tells why an item wasn't actually enqueued)
 	error?: Error (js error object if throwErrors option is false)
+	code: number (enqueu result code) 
+		0 = item enqueued
+		1 = key is ignored
+		2 = key not prioritized (only with ignoreNotPrioritized option)
+		3 = missing condition (only with ignoreItemCondition option)
+		4 = an error occurred
 } */
 
 //flow control

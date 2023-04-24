@@ -74,7 +74,7 @@ export type EnqueueOptions = {
 export type EnqueueResult = {
 	enqueued: boolean
 	code: EnqueueResultCode,
-	message?: string
+	message: string
 	error?: Error
 }
 
