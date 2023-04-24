@@ -55,7 +55,7 @@ export class Queue<T = any> {
 	getName() { return this.name }
 
 	log(...args: any[]) {
-		if (this.logger) console.log(new Date(), `#>`, ...args)
+		if (this.logger) console.log(new Date(), `#> [${this.name}]`, ...args)
 	}
 
 	/**Set options for the entire queue*/
@@ -279,7 +279,7 @@ export class Queue<T = any> {
 				Buffer.from(JSON.stringify(item))
 		})
 
-		this.log(`enqueue item - queue: ${this.name} - key: ${key} [${Date.now() - pushTimestamp}ms]`)
+		this.log(`[${key}] enqueue item [${Date.now() - pushTimestamp}ms]`)
 	}
 
 	private async popItemFromQueue(key: string, item: T, callback: ExecCallback<T>, start: number) {
@@ -302,11 +302,11 @@ export class Queue<T = any> {
 		let retryCount = 0
 		while (retryCount < maxRetry) {
 			try {
-				this.log(`dequeued item - queue: ${this.name} - key: ${key} [${Date.now() - start}ms]`)
+				this.log(`[${key}] dequeued item [${Date.now() - start}ms]`)
 				await callback(item, key, this)
 				break
 			} catch (error) {
-				if (retryCount > 0) this.log(`retrying item flush - queue: ${this.name} - key: ${key} - #`, retryCount)
+				if (retryCount > 0) this.log(`[${key}] retrying item dequeue - #`, retryCount)
 				retryCount++
 				if (retryCount >= maxRetry) {
 					if (awaitMaxRetryCallback) await onMaxRetryCallback(error, item, key, this)
