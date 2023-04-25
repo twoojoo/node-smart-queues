@@ -288,7 +288,7 @@ nsqcli <address>
 Type *help* in the cli to get the list of all available commands.
 
 ```
-LIST - gets the names of the queues registered in the pool (comma separated)
+ LIST - gets the names of the queues registered in the pool (comma separated)
 	list
  EXISTS - tells if a queue exists in the pool(true/false)
 	exists <queue-name>
@@ -300,6 +300,8 @@ LIST - gets the names of the queues registered in the pool (comma separated)
 	start <queue-name>
  IGNORE - commands a queue to ignore a list of keys (comma separated)
 	ignore <queue-name> <key1>,<key2>,<key3>
+ RESTORE - commands a queue to restore a list of keys (comma separated)
+	restore <queue-name> <key1>,<key2>,<key3>
  IGNORED - tells if a key is ignored by a queue
 	ignored <queue-name> <key-name>
  STATE - gets the number of pending jobs in a queue for every key (or for a specific key)
