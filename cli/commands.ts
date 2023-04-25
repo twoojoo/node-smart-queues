@@ -1,4 +1,5 @@
 import { Choiche, colors } from "niclijs"
+import * as qs from "node:querystring"
 
 const url = "http://0.0.0.0:3000/v1/"
 
@@ -44,6 +45,67 @@ export const commands: Choiche[] = [{
 	command: "EXIT",
 	description: "exit the cli",
 	action: async (cmd: string[]) => process.exit(0)
+}, {
+	command: "IGNORE",
+	description: "commands a queue to ignore a list of keys (comma separated)",
+	action: async (cmd: string[]) => {
+		const name = cmd[1]
+		const keys = cmd[2]
+		if (!name) return "no queue name provided"
+		if (!keys) return "no keys provided"
+		const resp = await (await request(url + "queue/" + name + "/ignore/" + keys)).text()
+		return resp
+	}
+}, {
+	command: "IGNORED",
+	description: "tells if a key is ignored by a queue",
+	action: async (cmd: string[]) => {
+		const name = cmd[1]
+		const key = cmd[2]
+		if (!name) return "no queue name provided"
+		if (!key) return "no key provided"
+		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/ignored")).text()
+		return resp
+	}
+}, {
+	command: "STATE",
+	description: "gets the number of pending jobs in a queue for every key (or for a specific key)",
+	action: async (cmd: string[]) => {
+		const name = cmd[1]
+		const key = cmd[2]
+		if (!name) return "no queue name provided"
+		const resp = await (!key ?
+			await request(url + "queue/" + name + "/state") :
+			await request(url + "queue/" + name + "/key/" + key + "/state")).text()
+		return resp
+	}
+}, {
+	command: "MODE",
+	description: "gets the queue mode (FIFO/LIFO) for the queue key or for a specific key",
+	action: async (cmd: string[]) => {
+		const name = cmd[1]
+		const key = cmd[2]
+		if (!name) return "no queue name provided"
+		const resp = await (!key ?
+			await request(url + "queue/" + name + "/mode") :
+			await request(url + "queue/" + name + "/key/" + key + "/mode")).json()
+		return Object.entries(resp).map(([name, mode]) => `${name}: ${mode}`).join("\n")
+	}
+}, {
+	command: "ENQUEUE",
+	description: "push an item to a queue with a key",
+	action: async (cmd: string[]) => {
+		const name = cmd[1]
+		const key = cmd[2]
+		const item = cmd[3]
+		const kind = cmd[4]
+		if (!name) return "no queue name provided"
+		if (!key) return "no key provided"
+		if (!kind) console.log("no kind provided (defatul: string)")
+		const queryString = qs.stringify({ item, kind })
+		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/enqueue?" + queryString)).json() 
+		return resp
+	}
 }];
 
 export async function testConnection() {
