@@ -49,31 +49,42 @@ export const commands: Choiche[] = [{
 	command: "IGNORE",
 	description: "commands a queue to ignore a list of keys (comma separated)",
 	action: async (cmd: string[]) => {
-		const name = cmd[1]
-		const keys = cmd[2]
-		if (!name) return "no queue name provided"
-		if (!keys) return "no keys provided"
+		const name = cmd[0]
+		const keys = cmd[1]
+		if (!name) { console.log("no queue name provided"); return }
+		if (!keys) { console.log("no keys provided"); return }
 		const resp = await (await request(url + "queue/" + name + "/ignore/" + keys)).text()
-		return resp
+		console.log(resp)
+	}
+}, {
+	command: "RESTORE",
+	description: "commands a queue to restore a list of keys (comma separated)",
+	action: async (cmd: string[]) => {
+		const name = cmd[0]
+		const keys = cmd[1]
+		if (!name) { console.log("no queue name provided"); return }
+		if (!keys) { console.log("no keys provided"); return }
+		const resp = await (await request(url + "queue/" + name + "/restore/" + keys)).text()
+		console.log(resp)
 	}
 }, {
 	command: "IGNORED",
 	description: "tells if a key is ignored by a queue",
 	action: async (cmd: string[]) => {
-		const name = cmd[1]
-		const key = cmd[2]
-		if (!name) return "no queue name provided"
-		if (!key) return "no key provided"
+		const name = cmd[0]
+		const key = cmd[1]
+		if (!name) { console.log("no queue name provided"); return }
+		if (!key) { console.log("no key provided"); return }
 		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/ignored")).text()
-		return resp
+		console.log(resp)
 	}
 }, {
 	command: "STATE",
 	description: "gets the number of pending jobs in a queue for every key (or for a specific key)",
 	action: async (cmd: string[]) => {
-		const name = cmd[1]
-		const key = cmd[2]
-		if (!name) return "no queue name provided"
+		const name = cmd[0]
+		const key = cmd[1]
+		if (!name) { console.log("no queue name provided"); return }
 		const resp = await (!key ?
 			await request(url + "queue/" + name + "/state") :
 			await request(url + "queue/" + name + "/key/" + key + "/state")).text()
@@ -83,28 +94,32 @@ export const commands: Choiche[] = [{
 	command: "MODE",
 	description: "gets the queue mode (FIFO/LIFO) for the queue key or for a specific key",
 	action: async (cmd: string[]) => {
-		const name = cmd[1]
-		const key = cmd[2]
-		if (!name) return "no queue name provided"
+		const name = cmd[0]
+		const key = cmd[1]
+		if (!name) { console.log("no queue name provided"); return }
 		const resp = await (!key ?
 			await request(url + "queue/" + name + "/mode") :
 			await request(url + "queue/" + name + "/key/" + key + "/mode")).json()
-		return Object.entries(resp).map(([name, mode]) => `${name}: ${mode}`).join("\n")
+		const output = Object.entries(resp).map(([name, mode]) => `${name}: ${mode}`).join("\n")
+		console.log(output)
 	}
 }, {
 	command: "ENQUEUE",
 	description: "push an item to a queue with a key",
 	action: async (cmd: string[]) => {
-		const name = cmd[1]
-		const key = cmd[2]
-		const item = cmd[3]
-		const kind = cmd[4]
-		if (!name) return "no queue name provided"
-		if (!key) return "no key provided"
+		const name = cmd[0]
+		const key = cmd[1]
+		const item = cmd[2]
+		const kind = cmd[3]
+		if (!name) { console.log("no queue name provided"); return }
+		if (!key) { console.log("no key provided"); return }
 		if (!kind) console.log("no kind provided (defatul: string)")
 		const queryString = qs.stringify({ item, kind })
 		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/enqueue?" + queryString)).json() 
-		return resp
+		console.log("enqueued:", resp.enqueued)
+		console.log("code:", resp.code)
+		console.log("message:", resp.message)
+		if (resp.error) console.error("error:", resp.error)
 	}
 }];
 
