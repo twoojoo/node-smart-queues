@@ -1,4 +1,4 @@
-import { QueuePool } from "../src/types";
+import { EnqueueResult, EnqueueResultCode, QueuePool } from "../src/types";
 import { RouteOptions } from "fastify"
 import { getQueue, getQueuesList } from "../src/pool";
 
@@ -60,7 +60,15 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		url: "/v1/queue/:name/ignore/:keys",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
-			queue.ignoreKeys(req.params.keys.split(","))
+			queue.ignoreKeys(...req.params.keys.split(","))
+			rep.send()
+		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/restore/:keys",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			queue.restoreKeys(...req.params.keys.split(","))
 			rep.send()
 		}
 	}, {
@@ -110,7 +118,13 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 					parseFloat(req.query.item) :
 					req.query.item
 
-			const result = await queue.enqueue(req.params.key, item)
+			let result: EnqueueResult
+			if (!queue) result = {
+				enqueued: false,
+				message: `queue ${req.params.name} not found`,
+				code: EnqueueResultCode.QueueNotFound,
+			}
+			else result = await queue.enqueue(req.params.key, item)
 
 			rep.send(result)
 		}

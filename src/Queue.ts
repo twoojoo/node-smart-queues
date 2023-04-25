@@ -320,8 +320,8 @@ export class Queue<T = any> {
 	/**Ignores items pushed for the provided keys (dosen't override previously ignored key)
 	 * @param keys - provide a list of keys (key * is forbidden)*/
 	ignoreKeys(...keys: string[]) {
-		if (Array.isArray(keys)) this.globalRules.ignore = Array.from(new Set(this.globalRules.ignore.concat(keys)))
-		else this.globalRules.ignore = Array.from(new Set(this.globalRules.ignore.concat([keys])))
+		if (Array.isArray(keys)) this.globalRules.ignore = Array.from(new Set((this.globalRules.ignore || []).concat(keys)))
+		else this.globalRules.ignore = Array.from(new Set((this.globalRules.ignore || []).concat([keys])))
 		return this
 	} 
 
@@ -350,7 +350,7 @@ export class Queue<T = any> {
 
 	/**Tells if a key is ignored by the queue*/
 	isKeyIgnored(key: string): boolean {
-		return !!this.globalRules.ignore.includes(key)
+		return !!this.globalRules.ignore?.includes(key)
 	}
 
 	async getStorageCount(): Promise<StoredCount> {

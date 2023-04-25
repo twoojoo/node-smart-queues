@@ -6,7 +6,8 @@ export enum EnqueueResultCode {
 	KeyIgnored = 1,
 	KeyNotPrioritized = 2,
 	MissingCondition = 3,
-	ErrorOccurred = 3,
+	ErrorOccurred = 4,
+	QueueNotFound = 5
 }
 
 export type QueueOptions<T> = QueueBasicOptions & KeyOptions<T> & {
