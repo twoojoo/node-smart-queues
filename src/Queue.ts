@@ -25,7 +25,6 @@ import {
 
 export class Queue<T = any> {
 	// static options
-	private name: string
 	private storage: Storage = undefined
 	private loopRate: number = 1000 / DEFAULT_SHIFT_RATE
 	private gzip: boolean = false
@@ -42,8 +41,7 @@ export class Queue<T = any> {
 	private globalRules: GlobalRules<T> = {}
 	private keyRules: { [key: string]: KeyRules<T> } = {}
 
-	constructor(name: string, options: QueueOptions<T> = {}) {
-		this.name = name
+	constructor(private name: string, options: QueueOptions<T> = {}) {
 		this.storage = options?.storage?.(name) || inMemoryStorage()(name)
 		this.gzip = options.gzip || false
 		this.loopRate = (options.loopRate || DEFAULT_SHIFT_RATE) / 1000

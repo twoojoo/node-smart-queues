@@ -9,12 +9,12 @@ import { Queue } from "../src"
 
 	for (let i = 1; i < 4; i++) {
 		const {
-			pushed,
+			enqueued,
 			message,
 			error
 		} = await q.enqueue(`k${i}`, i, { throwErrors: false })
 
-		console.log(new Date(), `#> k${i} item pushed?`, pushed, message || "")
+		console.log(new Date(), `#> k${i} item pushed?`, enqueued, message || "")
 		if (error) console.error(error)
 	}
 })()
