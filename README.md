@@ -323,6 +323,9 @@ PENDING gets the number of pending jobs in a queue for every key (or for a speci
 MODE gets the queue mode (FIFO/LIFO) for the queue key or for a specific key
 ENQUEUE push an item to a queue for a certain key
 PAUSED tells if a queue is paused
+BLOCK commands a queue to stop dequeuing a list of keys (comma separated)
+RELEASE commands a queue to release a list of previously blocked keys (comma separated)
+BLOCKED tells if a key is blocked within a queue
 ```
 
 <br>
