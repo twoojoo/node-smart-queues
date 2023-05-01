@@ -175,6 +175,8 @@ queue.enqueue("my-key", 3, { throwErrors: false /*default true*/})
 
 ### Flow control
 
+Pause method stops items dequeing but keeps item enqueing. See [block](#blockrelease) method for a key-specific pausing.
+
 ```typescript
 //pause the queue until the start command is triggered
 queue.pause() 
@@ -207,7 +209,7 @@ queue.isKeyIgnored("key-1")
 
 #### Block/Release
 
-Affects items dequeing only
+Affects items dequeing only (acts as a key-specific queue [pause](#flow-control))
 
 ```typescript
 //stops equeing provided keys' items
