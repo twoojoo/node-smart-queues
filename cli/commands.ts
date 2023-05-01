@@ -15,8 +15,8 @@ export const commands: Choiche[] = [{
 	description: "tells if a queue exists by name",
 	action: async (args: string[]) => { 
 		const name = args[0]
-		
-		if (!name) console.log("no queue name provided")
+
+		if (!name) console.error("no queue name provided")
 		else {
 			const resp = await (await request(url + "queue/" + name + "/exists")).text()
 			console.log(resp)
@@ -29,11 +29,10 @@ export const commands: Choiche[] = [{
 		const name = cmd[0]
 		const time = cmd[1]
 
-		if (!name) console.log("no queue name provided")
+		if (!name) console.error("no queue name provided")
 		else await (time ? 
 			await request(url + "queue/" + name + "/pause?time=" + time) :
 			await request(url + "queue/" + name + "/pause")).text()
-		
 	}
 }, {
 	command: "START",
@@ -41,7 +40,7 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 
-		if (!name) console.log("no queue name provided")
+		if (!name) console.error("no queue name provided")
 		else await (await request(url + "queue/" + name + "/start")).text()
 	}
 }, {
@@ -56,12 +55,12 @@ export const commands: Choiche[] = [{
 		const keys = cmd[1]
 
 		if (!name) { 
-			console.log("no queue name provided"); 
+			console.error("no queue name provided"); 
 			return
 		}
 
 		if (!keys) { 
-			console.log("no keys provided");
+			console.error("no keys provided");
 			return
 		}
 
@@ -138,7 +137,7 @@ export const commands: Choiche[] = [{
 		const key = cmd[1]
 
 		if (!name) { 
-			console.log("no queue name provided"); 
+			console.error("no queue name provided"); 
 			return
 		}
 
@@ -159,16 +158,16 @@ export const commands: Choiche[] = [{
 		const kind = cmd[3]
 
 		if (!name) {
-			console.log("no queue name provided"); 
+			console.error("no queue name provided"); 
 			return
 		}
 
 		if (!key) {
-			console.log("no key provided"); 
+			console.error("no key provided"); 
 			return
 		}
 
-		if (!kind) console.log("no kind provided (defatul: string)")
+		if (!kind) console.log(colors.FgLightGrey("no kind provided (defatul: string)"))
 
 		const queryString = qs.stringify({ item, kind })
 		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/enqueue?" + queryString)).json() 
