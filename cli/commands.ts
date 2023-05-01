@@ -15,6 +15,7 @@ export const commands: Choiche[] = [{
 	description: "tells if a queue exists by name",
 	action: async (args: string[]) => { 
 		const name = args[0]
+		
 		if (!name) console.log("no queue name provided")
 		else {
 			const resp = await (await request(url + "queue/" + name + "/exists")).text()
@@ -27,6 +28,7 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const time = cmd[1]
+
 		if (!name) console.log("no queue name provided")
 		else await (time ? 
 			await request(url + "queue/" + name + "/pause?time=" + time) :
@@ -38,6 +40,7 @@ export const commands: Choiche[] = [{
 	description: "starts a queue (or resumes it)",
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
+
 		if (!name) console.log("no queue name provided")
 		else await (await request(url + "queue/" + name + "/start")).text()
 	}
@@ -51,8 +54,17 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const keys = cmd[1]
-		if (!name) { console.log("no queue name provided"); return }
-		if (!keys) { console.log("no keys provided"); return }
+
+		if (!name) { 
+			console.log("no queue name provided"); 
+			return
+		}
+
+		if (!keys) { 
+			console.log("no keys provided");
+			return
+		}
+
 		const resp = await (await request(url + "queue/" + name + "/ignore/" + keys)).text()
 		console.log(resp)
 	}
@@ -62,8 +74,17 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const keys = cmd[1]
-		if (!name) { console.log("no queue name provided"); return }
-		if (!keys) { console.log("no keys provided"); return }
+
+		if (!name) { 
+			console.error("no queue name provided"); 
+			return
+		}
+
+		if (!keys) { 
+			console.error("no keys provided"); 
+			return
+		}
+
 		const resp = await (await request(url + "queue/" + name + "/restore/" + keys)).text()
 		console.log(resp)
 	}
@@ -73,8 +94,17 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const key = cmd[1]
-		if (!name) { console.error("no queue name provided"); return }
-		if (!key) { console.error("no key provided"); return }
+		
+		if (!name) {
+			console.error("no queue name provided");
+			return
+		}
+		
+		if (!key) {
+			console.error("no key provided");
+			return
+		}
+		
 		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/ignored")).text()
 		console.log(resp)
 	}
@@ -85,7 +115,10 @@ export const commands: Choiche[] = [{
 		const name = cmd[0]
 		const key = cmd[1]
 
-		if (!name) { console.log("no queue name provided"); return }
+		if (!name) { 
+			console.log("no queue name provided"); 
+			return
+		}
 
 		const resp = await (!key ?
 			await request(url + "queue/" + name + "/pending") :
@@ -103,10 +136,16 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const key = cmd[1]
-		if (!name) { console.log("no queue name provided"); return }
+
+		if (!name) { 
+			console.log("no queue name provided"); 
+			return
+		}
+
 		const resp = await (!key ?
 			await request(url + "queue/" + name + "/mode") :
 			await request(url + "queue/" + name + "/key/" + key + "/mode")).json()
+
 		const output = Object.entries(resp).map(([name, mode]) => `${name}: ${mode}`).join("\n")
 		console.log(output)
 	}
@@ -118,11 +157,22 @@ export const commands: Choiche[] = [{
 		const key = cmd[1]
 		const item = cmd[2]
 		const kind = cmd[3]
-		if (!name) { console.log("no queue name provided"); return }
-		if (!key) { console.log("no key provided"); return }
+
+		if (!name) {
+			console.log("no queue name provided"); 
+			return
+		}
+
+		if (!key) {
+			console.log("no key provided"); 
+			return
+		}
+
 		if (!kind) console.log("no kind provided (defatul: string)")
+
 		const queryString = qs.stringify({ item, kind })
 		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/enqueue?" + queryString)).json() 
+
 		console.log("enqueued:", resp.enqueued)
 		console.log("code:", resp.code)
 		console.log("message:", resp.message)
