@@ -1,3 +1,5 @@
+import { colors } from "niclijs"
+
 export async function testConnection() {
 	const response = await (await request(global.url + "ping"))?.text()
 	if (response != "pong") {
@@ -9,15 +11,13 @@ export async function testConnection() {
 export async function request(url: string): Promise<Response> {
 	const log = console.error
 	try {
-		// console.log(colors.FgLightGrey("fetching " + "'" + url + "'..."))
 		console.error = () => {}
 		const response = await fetch(url)
 		console.error = log
 		return response
 	} catch (err) {
+		//connections error should be catch via the
+		//test connection function (periodic)
 		console.error = log
-		// console.log(err)
-		// console.error("an error occurred")
-		// return 
 	}
 }
