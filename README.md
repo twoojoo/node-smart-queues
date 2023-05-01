@@ -302,7 +302,7 @@ curl http://localhost:3000/v1/queue/<name>/ignore/<keys>
 npm i -g node-smart-queues-cli
 ```
 
-Allows to control queues both locally or remotely via the command line. Use the **NSQ_URL** environment variable to set the server address (default address is *http:////0.0.0.0:3000*). It requires the HTTP interface to be up and running.
+Allows to control queues both locally or remotely via the command line. Use the **NSQ_URL** environment variable to set the server address (default address is *http:///0.0.0.0:3000*). It requires the HTTP interface to be up and running.
 
 ```bash
 nsqcli
