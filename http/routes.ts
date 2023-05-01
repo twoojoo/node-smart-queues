@@ -149,5 +149,21 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			queue.options({ dequeueInterval })
 			rep.send()
 		}
+	},{
+		method: "GET",
+		url: "/v1/queue/:name/block/:keys",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			queue.block(...req.params.keys.split(","))
+			rep.send()
+		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/release/:keys",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			queue.release(...req.params.keys.split(","))
+			rep.send()
+		}
 	}]
 }
