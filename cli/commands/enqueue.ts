@@ -4,7 +4,7 @@ import { request } from "../request"
 
 export const enqueue: Choiche = {
 	command: "ENQUEUE",
-	description: "push an item to a queue with a key",
+	description: "push an item to a queue for a certain key",
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const key = cmd[1]

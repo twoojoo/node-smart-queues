@@ -10,8 +10,9 @@ import { pending } from "./pending";
 import { mode } from "./mode";
 import { enqueue } from "./enqueue";
 import { paused } from "./paused";
+import { Choiche, colors } from "niclijs";
 
-export const commands = [
+const commandsPartial: Choiche[] = [
 	list,
 	exists,
 	pause,
@@ -25,3 +26,14 @@ export const commands = [
 	enqueue,
 	paused
 ]
+
+export const commands = commandsPartial.concat([{
+	command: "HELP",
+	action: () => {
+		console.log("\nAvailable commands:")
+		commandsPartial.forEach(cmd => { 
+			console.log(cmd.command, colors.FgLightGrey(cmd.description))
+		})
+		console.log()
+	}
+}])
