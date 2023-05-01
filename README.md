@@ -234,7 +234,7 @@ npm i node-smart-queues-http
 import { QueuesPool, Queue } from "node-smart-queues"
 import { nsqServer } from "node-smart-queues-http"
 
-await nsqHTTP(QueuesPool, {
+await nsqServer(QueuesPool, {
 	port: 3000, //default: 80
 	logger: true //default: false
 })
