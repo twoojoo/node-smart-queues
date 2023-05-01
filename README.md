@@ -285,33 +285,21 @@ Allows to control queues both locally or remotely via the command line (default 
 nsqcli <address>
 ```
 
-Type *help* in the cli to get the list of all available commands.
+Type *HELP* in the cli to get the list of all available commands.
 
 ```
- LIST - gets the names of the queues registered in the pool (comma separated)
-	list
- EXISTS - tells if a queue exists in the pool(true/false)
-	exists <queue-name>
- PAUSED - tells if a queue is paused or not
-	paused <queue-name>
- PAUSE - pauses a queue (optional pause timeout in ms)
-	pause <queue-name>
- START - starts a queue
-	start <queue-name>
- IGNORE - commands a queue to ignore a list of keys (comma separated)
-	ignore <queue-name> <key1>,<key2>,<key3>
- RESTORE - commands a queue to restore a list of keys (comma separated)
-	restore <queue-name> <key1>,<key2>,<key3>
- IGNORED - tells if a key is ignored by a queue
-	ignored <queue-name> <key-name>
- STATE - gets the number of pending jobs in a queue for every key (or for a specific key)
-	state <queue-name> <key-name> [optional]
- MODE - gets the queue mode (FIFO/LIFO) for the queue key or for a specific key
-	mode <queue-name> <key-name> [optional]
- ENQUEUE - push an item to a queue with a key
-	push <queue-name> <key-name> <item-content> <item-type> [json/string/number (default: string)]
- EXIT - exit the cli
-	exit
+LIST gets the names of the queues that are registered in the pool
+EXISTS tells if a queue exists by name
+PAUSE pauses a queue (optional pause timeout in ms)
+START starts a queue (or resumes it)
+EXIT exit the cli
+IGNORE commands a queue to ignore a list of keys (comma separated)
+RESTORE commands a queue to restore a list of keys (comma separated)
+IGNORED tells if a key is ignored by a queue
+PENDING gets the number of pending jobs in a queue for every key (or for a specific key)
+MODE gets the queue mode (FIFO/LIFO) for the queue key or for a specific key
+ENQUEUE push an item to a queue for a certain key
+PAUSED tells if a queue is paused
 ```
 
 <br>
