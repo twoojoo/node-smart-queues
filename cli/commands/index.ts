@@ -1,3 +1,4 @@
+import { Choiche, colors } from "niclijs";
 import { list } from "./list";
 import { exists } from "./exists";
 import { pause } from "./pause";
@@ -10,7 +11,8 @@ import { pending } from "./pending";
 import { mode } from "./mode";
 import { enqueue } from "./enqueue";
 import { paused } from "./paused";
-import { Choiche, colors } from "niclijs";
+import { block } from "./block";
+import { release } from "./release";
 
 const commandsPartial: Choiche[] = [
 	list,
@@ -24,7 +26,9 @@ const commandsPartial: Choiche[] = [
 	pending,
 	mode,
 	enqueue,
-	paused
+	paused,
+	block,
+	release
 ]
 
 export const commands = commandsPartial.concat([{
