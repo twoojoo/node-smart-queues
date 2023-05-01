@@ -24,7 +24,7 @@ export function nsqServer(pool: QueuePool, options: NsqHttpOptions = {}): Promis
 
 		nsqServer.listen({ host, port }, (err, addr) => {
 			if (err) reject(err)
-			else options.logger && console.log(new Date(), `#> nsq rest server listening at`, addr)
+			else options.logger && console.log(new Date(), `# nsq # http server listening at`, addr)
 			resolve({ host, port })
 		})
 	})

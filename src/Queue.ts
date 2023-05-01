@@ -55,7 +55,7 @@ export class Queue<T = any> {
 	getName() { return this.name }
 
 	log(...args: any[]) {
-		if (this.logger) console.log(new Date(), `#> [${this.name}]`, ...args)
+		if (this.logger) console.log(new Date(), `# nsq # [${this.name}]`, ...args)
 	}
 
 	/**Set options for the entire queue*/
