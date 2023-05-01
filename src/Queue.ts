@@ -75,7 +75,7 @@ export class Queue<T = any> {
 
 	/** ignore and ignoreNotPrioritized affects pushed item only */
 	private calculatePriority(): string[] {
-		const knownKeys = Object.keys(this.keyRules).filter(k => this.keyRules[k].blocked)
+		const knownKeys = Object.keys(this.keyRules).filter(k => !this.keyRules[k].blocked)
 		if (this.globalRules.randomPriority) return shuffleArray(knownKeys)
 		const notPrioritized = knownKeys.filter(key => !(this.globalRules.priority || []).includes(key))
 		return (this.globalRules.priority || []).concat(notPrioritized) 
