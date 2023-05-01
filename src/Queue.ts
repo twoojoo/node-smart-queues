@@ -75,7 +75,7 @@ export class Queue<T = any> {
 
 	// LOOP CONTROL
 
-	/** ignoreNotPrioritized affects pushed item only */
+	/** ignore and ignoreNotPrioritized affects pushed item only */
 	private calculatePriority(): string[] {
 		const knownKeys = Object.keys(this.keyRules)
 		if (this.globalRules.randomPriority) return shuffleArray(knownKeys)
@@ -127,7 +127,7 @@ export class Queue<T = any> {
 			for (const key of this.calculatePriority()) {
 				const keyRules = this.keyRules[key] || {}
 
-				//skip the key if a pop callback is not provided 
+				//skip the key if an onDequeue hook is not provided 
 				//(maybe remove this feature and just pop)
 				if (!keyRules.onDequeue && !this.globalRules.onDequeue) continue
 
@@ -161,17 +161,20 @@ export class Queue<T = any> {
 
 					// unlock the loop only if there the 
 					// queue is completely empty
-					const storedCount = await this.getStorageCount();
-					for (let count of Object.values(storedCount)) {
-						if (count != 0) this.loopLocked = false
-					}
- 
+					// const storedCount = await this.getStorageCount();
+					// for (let count of Object.values(storedCount)) {
+					// 	if (count != 0) this.loopLocked = false
+					// }
+ 	
 					//break the loop any time something is popped
-					//to force a priorities recalculation
+					//to force a priority recalculation
 					break
 				}
 			}
+			
+			this.loopLocked = false 
 		}, this.loopRate)
+
 		this.looping = false
 	}
 
@@ -210,18 +213,17 @@ export class Queue<T = any> {
 	/**Push an item in the queue for a certain key
 	 * @param key - provide a key (* refers to all keys and will throw an error when used as a key)
 	 * @param item - item to be pushed in the queue
-	 * @returns true if the item wasn't ignored by the queue
 	 * */
 	async enqueue(key: string, item: T, options: EnqueueOptions = {}): Promise<EnqueueResult> {
 		try {
 			const pushTimestamp = Date.now()
 
 			//check if the key is to be ignored
-			if (this.globalRules.ignore?.includes(key)) 
+			if (this.globalRules.ignore?.includes(key))
 				return { 
 					enqueued: false, 
 					code: EnqueueResultCode.KeyIgnored,
-					message: `key "${key}" is ignored by the queue` 
+					message: `key "${key}" is being ignored` 
 				}
 
 			//check if the key is not prioritized and should be skipped
@@ -253,12 +255,12 @@ export class Queue<T = any> {
 
 			this.loopLocked = false
 			this.startLoop()
+
 			return { 
 				enqueued: true, 
 				message: `item enqueued for key "${key}"`,
 				code: EnqueueResultCode.Enqueued
 			}
-
 		} catch (error) {
 			if (options.throwErrors !== false) throw error
 			else return {

@@ -15,7 +15,8 @@ import { nsqServer } from "../http";
 	let count = 0
 	while (true) {
 		await new Promise(r => setTimeout(() => r(0), 1000))
-		await q.enqueue(`k1`, count)
+		const { message, enqueued } = await q.enqueue(`k1`, count)
+		if (!enqueued) console.log(message)
 		count++
 	}
 })()
