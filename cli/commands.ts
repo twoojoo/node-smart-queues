@@ -79,16 +79,23 @@ export const commands: Choiche[] = [{
 		console.log(resp)
 	}
 }, {
-	command: "STATE",
+	command: "PENDING",
 	description: "gets the number of pending jobs in a queue for every key (or for a specific key)",
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const key = cmd[1]
+		
 		if (!name) { console.log("no queue name provided"); return }
+
 		const resp = await (!key ?
-			await request(url + "queue/" + name + "/state") :
-			await request(url + "queue/" + name + "/key/" + key + "/state")).text()
-		return resp
+			await request(url + "queue/" + name + "/pending") :
+			await request(url + "queue/" + name + "/key/" + key + "/pending")).json()
+
+		if (typeof resp == "number") {
+			console.log(resp)
+		} else {
+			Object.entries(resp).forEach(([key, count]) => console.log(`${key}:`, count))
+		}
 	}
 }, {
 	command: "MODE",

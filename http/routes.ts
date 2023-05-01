@@ -73,19 +73,15 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		}
 	}, {
 		method: "GET",
-		url: "/v1/queue/:name/state",
+		url: "/v1/queue/:name/pending",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
 			const storedCount = await queue?.getStorageCount()
-			rep.send(
-				Object.entries(storedCount)
-					.map(([key, count]) => `${key}: ${count}`)
-					.join(",")
-			)
+			rep.send(storedCount)
 		}
 	}, {
 		method: "GET",
-		url: "/v1/queue/:name/key/:key/state",
+		url: "/v1/queue/:name/key/:key/pending",
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
 			const storedCount = await queue?.getStorageCount()
