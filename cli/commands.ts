@@ -73,8 +73,8 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const key = cmd[1]
-		if (!name) { console.log("no queue name provided"); return }
-		if (!key) { console.log("no key provided"); return }
+		if (!name) { console.error("no queue name provided"); return }
+		if (!key) { console.error("no key provided"); return }
 		const resp = await (await request(url + "queue/" + name + "/key/" + key + "/ignored")).text()
 		console.log(resp)
 	}
@@ -84,7 +84,7 @@ export const commands: Choiche[] = [{
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const key = cmd[1]
-		
+
 		if (!name) { console.log("no queue name provided"); return }
 
 		const resp = await (!key ?
