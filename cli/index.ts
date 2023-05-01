@@ -5,13 +5,13 @@ import { commands } from "./commands";
 const DEFAULT_URL = "http://0.0.0.0:3000";
 
 (async function () {
+	//setup server url
+	global.url = (process.argv[2] || DEFAULT_URL) + "/v1/"
+
 	//test connection at startup
 	//and every 2 seconds
 	await testConnection()
 	setInterval(() => testConnection(), 2000)
-
-	//setup server url
-	global.url = (process.argv[2] || DEFAULT_URL) + "/v1/"
 	
 	//listen for commands via niclijs
 	while (true) {
