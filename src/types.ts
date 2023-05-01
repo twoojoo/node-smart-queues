@@ -50,8 +50,8 @@ export type QueueItemParsed<T> = {
 
 export type KeyRules<T> = {
 	mode?: QueueMode
-	lastLockTimestamp?: number,
-	locked?: boolean
+	lastLockTimestamp?: number, //used for the inteval management
+	locked?: boolean //used for the inteval management
 	ignoreItemCondition?: IgnoreItemCondition<T>
 	maxRetry?: number
 	onMaxRetry?: OnMaxRetryCallback<T>
@@ -60,9 +60,10 @@ export type KeyRules<T> = {
 	onDequeueAwaited?: boolean
 	dequeueInterval?: number
 	dequeueSize?: number
+	blocked?: boolean //both enqueue and dequee stopped
 }
 
-export type KeyOptions<T> = Omit<KeyRules<T>, 'lastLockTimestamp' | 'locked'>
+export type KeyOptions<T> = Omit<KeyRules<T>, 'lastLockTimestamp' | 'locked' | 'blocked'>
 
 export type PriorityOptions = {
 	ignoreNotPrioritized?: boolean

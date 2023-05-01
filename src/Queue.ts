@@ -75,7 +75,7 @@ export class Queue<T = any> {
 
 	/** ignore and ignoreNotPrioritized affects pushed item only */
 	private calculatePriority(): string[] {
-		const knownKeys = Object.keys(this.keyRules)
+		const knownKeys = Object.keys(this.keyRules).filter(k => this.keyRules[k].blocked)
 		if (this.globalRules.randomPriority) return shuffleArray(knownKeys)
 		const notPrioritized = knownKeys.filter(key => !(this.globalRules.priority || []).includes(key))
 		return (this.globalRules.priority || []).concat(notPrioritized) 
@@ -398,5 +398,29 @@ export class Queue<T = any> {
 			if (this.globalRules.mode) return this.globalRules.mode
 			return "FIFO"
 		}
+	}
+
+	/**Blocks both the enqueuing (= ignore) and the dequeuing (not included in priority calculation) of items belonging to the provided keys*/
+	block(...keys: string[]) {
+		this.ignoreKeys(...keys)
+
+		keys.forEach(key => {
+			if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
+			this.keyRules[key].blocked = true 
+		})
+
+		return this
+	}
+
+	/**Unlocks both the previously blocked enqueuing and dequeuing of items belonging to the provided keys*/
+	release(...keys: string[]) {
+		this.restoreKeys(...keys)
+
+		keys.forEach(key => {
+			if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
+			this.keyRules[key].blocked = false 
+		})
+
+		return this
 	}
 }
