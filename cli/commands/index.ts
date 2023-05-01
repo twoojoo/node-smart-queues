@@ -9,6 +9,7 @@ import { ignored } from "./ignored";
 import { pending } from "./pending";
 import { mode } from "./mode";
 import { enqueue } from "./enqueue";
+import { paused } from "./paused";
 
 export const commands = [
 	list,
@@ -21,5 +22,6 @@ export const commands = [
 	ignored,
 	pending,
 	mode,
-	enqueue
+	enqueue,
+	paused
 ]
