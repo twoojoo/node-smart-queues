@@ -29,6 +29,7 @@ const commandsPartial: Choiche[] = [
 
 export const commands = commandsPartial.concat([{
 	command: "HELP",
+	description: "prints a list of all available commands",
 	action: () => {
 		console.log("\nAvailable commands:")
 		commandsPartial.forEach(cmd => { 
