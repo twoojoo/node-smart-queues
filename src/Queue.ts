@@ -400,10 +400,8 @@ export class Queue<T = any> {
 		}
 	}
 
-	/**Blocks both the enqueuing (= ignore) and the dequeuing (not included in priority calculation) of items belonging to the provided keys*/
+	/**Blocks the dequeuing of items belonging to the provided keys*/
 	block(...keys: string[]) {
-		this.ignoreKeys(...keys)
-
 		keys.forEach(key => {
 			if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 			this.keyRules[key].blocked = true 
@@ -412,10 +410,8 @@ export class Queue<T = any> {
 		return this
 	}
 
-	/**Unlocks both the previously blocked enqueuing and dequeuing of items belonging to the provided keys*/
+	/**Unlocks both the previously blocked dequeuing of items belonging to the provided keys*/
 	release(...keys: string[]) {
-		this.restoreKeys(...keys)
-
 		keys.forEach(key => {
 			if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 			this.keyRules[key].blocked = false 
@@ -423,4 +419,9 @@ export class Queue<T = any> {
 
 		return this
 	}
+
+	isBlocked(key: string): boolean {
+		if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
+		return !!this.keyRules[key].blocked
+	} 
 }

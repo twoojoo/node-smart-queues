@@ -165,5 +165,12 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			queue.release(...req.params.keys.split(","))
 			rep.send()
 		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/blocked/:key",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			rep.send(queue.isBlocked(req.params.key))
+		}
 	}]
 }

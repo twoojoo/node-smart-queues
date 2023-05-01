@@ -6,8 +6,9 @@ export enum EnqueueResultCode {
 	KeyIgnored = 1,
 	KeyNotPrioritized = 2,
 	MissingCondition = 3,
-	ErrorOccurred = 4,
-	QueueNotFound = 5
+	KeyBlocked = 4,
+	QueueNotFound = 5,
+	ErrorOccurred = 6
 }
 
 export type QueueOptions<T> = QueueBasicOptions & KeyOptions<T> & {
@@ -60,7 +61,7 @@ export type KeyRules<T> = {
 	onDequeueAwaited?: boolean
 	dequeueInterval?: number
 	dequeueSize?: number
-	blocked?: boolean //both enqueue and dequee stopped
+	blocked?: boolean
 }
 
 export type KeyOptions<T> = Omit<KeyRules<T>, 'lastLockTimestamp' | 'locked' | 'blocked'>

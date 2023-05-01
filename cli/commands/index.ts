@@ -13,6 +13,7 @@ import { enqueue } from "./enqueue";
 import { paused } from "./paused";
 import { block } from "./block";
 import { release } from "./release";
+import { blocked } from "./blocked";
 
 const commandsPartial: Choiche[] = [
 	list,
@@ -28,7 +29,8 @@ const commandsPartial: Choiche[] = [
 	enqueue,
 	paused,
 	block,
-	release
+	release,
+	blocked
 ]
 
 export const commands = commandsPartial.concat([{

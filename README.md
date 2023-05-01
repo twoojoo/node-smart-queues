@@ -34,6 +34,8 @@
 	- [Enqueue](#enqueue)
 	- [Flow control](#flow-control)
 	- [Keys status](#keys-status)
+		- [Ignore/Restore](#ignorerestore)
+		- [Block/Release](#blockrelease)
 	- [Miscellaneous](#miscellaneous)
 - [HTTP / CLI interface](#http--cli-interface)
 	- [Endpoints](#endpoints)
@@ -182,19 +184,40 @@ queue.pause(5000)
 
 //true/false
 queue.isPaused() 
+
+queue.start()
 ```
 
 ### Key status
 
+#### Ignore/Restore
+
+Affects items enqueing only
+
 ```typescript
-//starts to ignore provided keys
+//stops enqueing provided keys' items
 queue.ignoreKeys("key-1", "key-2" /*....*/) 
 
-//restart to consider provided keys
+//restarts enqueing provided keys' items
 queue.restoreKeys("key-1", "key-2" /*....*/) 
 
 //true/false
 queue.isKeyIgnored("key-1")
+```
+
+#### Block/Release
+
+Affects items dequeing only
+
+```typescript
+//stops equeing provided keys' items
+queue.blockKeys("key-1", "key-2" /*....*/) 
+
+//restart dequeing provided keys' itens
+queue.releaseKeys("key-1", "key-2" /*....*/) 
+
+//true/false
+queue.isKeyBlocked("key-1")
 ```
 
 ### Miscellaneous

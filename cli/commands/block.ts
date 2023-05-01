@@ -3,7 +3,7 @@ import { request } from "../request";
 
 export const block: Choiche = {
 	command: "BLOCK",
-	description: "commands a queue to both ignore and stop dequeuing a list of keys (comma separated)",
+	description: "commands a queue to stop dequeuing a list of keys (comma separated)",
 	action: async (cmd: string[]) => {
 		const name = cmd[0]
 		const keys = cmd[1]
