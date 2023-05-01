@@ -1,6 +1,6 @@
 import { EnqueueResult, EnqueueResultCode, QueuePool } from "../src/types";
-import { RouteOptions } from "fastify"
 import { getQueue, getQueuesList } from "../src/pool";
+import { RouteOptions } from "fastify"
 
 export function getRoutes(pool: QueuePool): RouteOptions[] {
 	return [{
