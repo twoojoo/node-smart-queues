@@ -15,7 +15,7 @@ export class MemoryStorage extends Storage {
 		if (!this.memory[key]) this.memory[key] = []
 		if (this.TTLms) {
 			this.timestampsCache.push(item.pushTimestamp)
-			this.runTTLCleanup()
+			this.runTTLCleanup({ forceThreshold: true })
 		}
 		this.memory[key].unshift(item)
 	}

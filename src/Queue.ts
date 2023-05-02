@@ -122,6 +122,8 @@ export class Queue<T = any> {
 			//the current one is active
 			this.loopLocked = true
 
+			if (!this.storage.initialized) return
+
 			for (const key of this.calculatePriority()) {
 				const keyRules = this.keyRules[key] || {}
 

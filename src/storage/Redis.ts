@@ -6,24 +6,26 @@ export class RedisStorage extends Storage {
 	private redis: Redis
 	private keyHead: string
 	private keySetTail = "§$et§"
-
-	private timestampsCache: number[] = []
+	private TTLkey: string
 
 	constructor(name: string, redisOptions: RedisOptions, TTLms: number) {
 		super(name, TTLms)
 		this.redis = new Redis(redisOptions)
 		this.redis.on("error", (err) => { throw err })
 		this.keyHead = "n§çs§çq-" + name
-		this.runTTLCleanup()
+		this.TTLkey = "n§çs§çq-" + name + "§$ttl§"
+		this.runTTLCleanup({ forceThreshold: true })
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {
-		if (this.TTLms) await this.pushTTL(key, item) 
-		else await this.pushNoTTL(key, item)
+		// if (this.TTLms)
+		await this.pushTTL(key, item) 
+		// else await this.pushNoTTL(key, item)
 	}
 
 	private async pushTTL(key: string, item: QueueItem) {
-		this.timestampsCache.push(item.pushTimestamp)
+		// this.timestampsCache.push(item.pushTimestamp)
+		await this.redis.lpush(this.TTLkey, `${item.pushTimestamp}`)
 		this.runTTLCleanup()
 		await this.redis.zadd(this.buildListKey(key), item.pushTimestamp, JSON.stringify(item))		
 	}
@@ -33,8 +35,9 @@ export class RedisStorage extends Storage {
 	}
 
 	async popRight(key: string, count: number): Promise<QueueItem[]> {
-		if (this.TTLms) return await this.popRightTTL(key, count)
-		else return await this.popRightNoTTL(key, count)
+		// if (this.TTLms)
+		return await this.popRightTTL(key, count)
+		// else return await this.popRightNoTTL(key, count)
 	}
 
 	private async popRightNoTTL(key: string, count: number): Promise<QueueItem[]> {
@@ -58,8 +61,9 @@ export class RedisStorage extends Storage {
 	}
 
 	async popLeft(key: string, count: number): Promise<QueueItem[]> {
-		if (this.TTLms) return await this.popLeftTTL(key, count)
-		else return await this.popLeftNoTTL(key, count)
+		// if (this.TTLms) 
+		return await this.popLeftTTL(key, count)
+		// else return await this.popLeftNoTTL(key, count)
 	}
 
 	async popLeftNoTTL(key: string, count: number): Promise<QueueItem[]> {
@@ -89,23 +93,24 @@ export class RedisStorage extends Storage {
 		// if (this.TTLms) {
 		for (const key of keys) {
 			if (!key.startsWith(this.keyHead)) continue
-			if (this.TTLms) {
-				try {
-					storedCount[this.getItemKey(key)] = await this.redis.zcount(key, '-inf', 'inf')
-				} catch (err) {
-					if (err.message.includes("WRONGTYPE")) continue
-
-				}
-			} else storedCount[this.getItemKey(key)] = await this.redis.llen(key)
+			// if (this.TTLms) {
+			try {
+				storedCount[this.getItemKey(key)] = await this.redis.zcount(key, '-inf', 'inf')
+			} catch (err) {
+				if (err.message.includes("WRONGTYPE")) continue
+				throw err
+			}
+			// } else storedCount[this.getItemKey(key)] = await this.redis.llen(key)
 		}	
 
 		return storedCount
 	}
 
 	private buildListKey(key: string) {
-		return this.TTLms ? 
-			this.keyHead + key + this.keySetTail :
-			this.keyHead + key
+		// return this.TTLms ? 
+		return this.keyHead + key + this.keySetTail
+		// :
+		// this.keyHead + key
 	}
 
 	private getItemKey(redisKey: string) {
@@ -115,7 +120,9 @@ export class RedisStorage extends Storage {
 	}
 
 	protected async getFirstTimestamp(): Promise<number> {
-		return this.timestampsCache.shift()
+		const ts = parseInt(await this.redis.rpop(this.TTLkey))
+		if (isNaN(ts)) return undefined
+		else return ts
 	}
 
 	protected async cleanupKeys(threshold: number): Promise<number> {
