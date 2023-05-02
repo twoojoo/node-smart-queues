@@ -426,4 +426,14 @@ export class Queue<T = any> {
 		if (!this.keyRules[key]) this.keyRules[key] = this.defaultKeyRules()
 		return !!this.keyRules[key].blocked
 	} 
+
+	async flush(...keys: string[]) {
+		if (keys?.length == 0) {
+			this.log(`flushing all keys items`)
+		} else {
+			keys.forEach(k => this.log(`[${k}] flushing items`))
+		}
+
+		await this.storage.flush(...keys)
+	}
 }

@@ -172,5 +172,21 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			const queue = getQueue(pool, req.params.name)
 			rep.send(queue.isBlocked(req.params.key))
 		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/flush",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			await queue.flush()
+			rep.send()
+		}
+	}, {
+		method: "GET",
+		url: "/v1/queue/:name/flush/:keys",
+		handler: async (req: any, rep) => {
+			const queue = getQueue(pool, req.params.name)
+			await queue.flush(...req.params.keys.split(","))
+			rep.send()
+		}
 	}]
 }

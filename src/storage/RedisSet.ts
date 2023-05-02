@@ -1,19 +1,22 @@
 import { QueueItem, StoredCount, TTLOptions } from "../types"
 import { Redis, RedisOptions } from "ioredis"
+import { deleteRedisKeys } from "./RedisList"
 import { Storage } from "./Storage"
 
 export class RedisSetStorage extends Storage {
 	private redis: Redis
 	private keyHead: string
-	private keySetTail = "§$et§"
 	private TTLkey: string
+
+	static keySetTail = "§$et§"
+	static keyTTLTail = "§$ttl§"
 
 	constructor(name: string, redisOptions: RedisOptions & TTLOptions) {
 		super(name, redisOptions.TTLms)
 		this.redis = new Redis(redisOptions)
 		this.redis.on("error", (err) => { throw err })
-		this.keyHead = "n§çs§çq-" + name
-		this.TTLkey = "n§çs§çq-" + name + "§$ttl§"
+		this.keyHead = "n§çs§çq-rset-" + name
+		this.TTLkey = "n§çs§çq-rset" + name + RedisSetStorage.keyTTLTail
 		this.runTTLCleanup({ forceThreshold: true })
 	}
 	
@@ -59,11 +62,11 @@ export class RedisSetStorage extends Storage {
 	}
 
 	private buildListKey(key: string) {
-		return this.keyHead + key + this.keySetTail
+		return this.keyHead + key + RedisSetStorage.keySetTail
 	}
 
 	private getItemKey(redisKey: string) {
-		return redisKey.split(this.keyHead)[1].split(this.keySetTail)[0]
+		return redisKey.split(this.keyHead)[1].split(RedisSetStorage.keySetTail)[0]
 	}
 
 	protected async getFirstTimestamp(): Promise<number> {
@@ -80,7 +83,7 @@ export class RedisSetStorage extends Storage {
 		const keys = await this.redis.keys(this.keyHead + "*")
 		for (const key of keys) {
 			if (!key.startsWith(this.keyHead)) continue
-			if (!key.endsWith(this.keySetTail)) continue
+			if (!key.endsWith(RedisSetStorage.keySetTail)) continue
 			const removed = await this.redis.zremrangebyscore(key, '-inf', `${threshold}`)
 			count += removed
 		}
@@ -88,4 +91,8 @@ export class RedisSetStorage extends Storage {
 		return count
 	}
 	
+	async flush(...keys: string[]): Promise<void> {
+		let redisKeys = await this.redis.keys(this.keyHead + "*")
+		await deleteRedisKeys(redisKeys, keys)
+	}
 }

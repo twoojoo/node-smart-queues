@@ -10,7 +10,7 @@ export class RedisListStorage extends Storage {
 		super(name, undefined)
 		this.redis = new Redis(redisOptions)
 		this.redis.on("error", (err) => { throw err })
-		this.keyHead = "n§çs§çq-" + name
+		this.keyHead = "n§çs§çq-lst" + name
 		this.initialized = true
 	}
 
@@ -45,7 +45,6 @@ export class RedisListStorage extends Storage {
 
 		const keys = await this.redis.keys(this.keyHead + "*")
 
-		// if (this.TTLms) {
 		for (const key of keys) {
 			if (!key.startsWith(this.keyHead)) continue
 			storedCount[this.getItemKey(key)] = await this.redis.llen(key)
@@ -66,8 +65,20 @@ export class RedisListStorage extends Storage {
 		throw Error("redis lists are not supposed to use TTL")
 	}
 
-	protected async cleanupKeys(threshold: number): Promise<number> {
+	protected async cleanupKeys(_: number): Promise<number> {
 		throw Error("redis lists are not supposed to use TTL")
 	}
 	
+	async flush(...keys: string[]): Promise<void> {
+		let redisKeys = await this.redis.keys(this.keyHead + "*")
+		await deleteRedisKeys(redisKeys, keys)
+	}
+}
+
+export async function deleteRedisKeys(keyList: string[], keys: string[] = []) {
+	if (keys.length == 0) {
+		keyList = keyList.filter(k => keys.includes(k))
+	}
+
+	await this.redis.del(...keyList)
 }

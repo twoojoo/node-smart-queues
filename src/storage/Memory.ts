@@ -71,4 +71,17 @@ export class MemoryStorage extends Storage {
 
 		return count
 	}
+
+	async flush(...keys: string[]): Promise<void> {
+		if (keys.length == 0) {
+			for (let key in this.memory) {
+				this.memory[key] = []
+			}
+		} else {
+			for (let key in this.memory) {
+				if (!keys.includes(key)) continue
+				this.memory[key] = []
+			}
+		}
+	}
 }

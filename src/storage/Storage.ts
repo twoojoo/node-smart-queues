@@ -59,4 +59,7 @@ export abstract class Storage {
 
 	/**removes the elements inserted before the provided threshold, returning the number of removed items*/
 	protected abstract cleanupKeys(threshold: number): Promise<number>
+
+	/**flushes items in the queue WITHOUT dequeuing them*/
+	abstract flush(...keys: string[]): Promise<void>
 }
