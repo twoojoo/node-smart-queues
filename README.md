@@ -36,6 +36,7 @@
 	- [Keys status](#keys-status)
 		- [Ignore/Restore](#ignorerestore)
 		- [Block/Release](#blockrelease)
+	- [Storage](#storage)
 	- [Miscellaneous](#miscellaneous)
 - [HTTP / CLI interface](#http--cli-interface)
 	- [Endpoints](#endpoints)
@@ -156,8 +157,8 @@ Here's an overview of all the available queue methods:
 ### Enqueue
 
 ```typescript
-//(async) push an item to the queue 
-queue.enqueue("my-key", 3, { throwErrors: false /*default true*/}) 
+//push an item to the queue 
+await queue.enqueue("my-key", 3, { throwErrors: false /*default true*/}) 
 /* returns: {
 	enqueued: boolean (tells if the item was acutally enqueued)
 	message: string (tells why an item wasn't actually enqueued)
@@ -222,6 +223,24 @@ queue.releaseKeys("key-1", "key-2" /*....*/)
 queue.isKeyBlocked("key-1")
 ```
 
+### Storage
+
+```typescript
+//returns the number of stored items for every known key
+await queue.getStorageCount() 
+/*returns: {
+	"key-1": 12,
+	"key-2": 34,
+	..etc..
+}*/
+
+//flush all items in the queue
+await queue.flush()
+
+//flush all items belonging to specific keys
+await queue.flush("key-1", "key-2" /*....*/)
+```
+
 ### Miscellaneous
 
 ```typescript
@@ -236,14 +255,6 @@ queue.getDequeueMode()
 
 //tells if the mode is FIFO/LIFO (key specific)
 queue.getDequeueMode("key-1")
-
-//(async) returns the number of stored items for every known key
-queue.getStorageCount() 
-/*returns: {
-	"key-1": 12,
-	"key-2": 34,
-	..etc..
-}*/
 ```
 
 
