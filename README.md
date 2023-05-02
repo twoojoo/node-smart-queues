@@ -93,7 +93,7 @@ const queue = Queue<number>("my-queue", {
 }).start();
 ```
 
-> **Why sorted sets?** that's because Redis' (lists)[https://redis.io/docs/data-types/lists/] (which would a have been a better choiche, from a performace point of view) lacks a proper TTL system. To provide this feature (and to mantain the storage compatibility when dynamically adding or removing the TTL), I prefered to take advantage Redis' a sorted sets, using the enqueue timestamp as score. 
+> **Why sorted sets?** that's because Redis' lists (which would a have been a better choiche, from a performace point of view) lacks a proper TTL system. To provide this feature (and to mantain the storage compatibility when dynamically adding or removing the TTL), I prefered to take advantage Redis' a sorted sets, using the enqueue timestamp as score. This mean that the enqueing and dequeing of an item will run at **O(log n)** instead of **O(1)**, which shouldn't be a big performance loss in a queue context, unless items are supposed to stay enqueued for a long time and/or a lot of items get enqueued.
 
 ## Queue options
 
