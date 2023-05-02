@@ -71,14 +71,11 @@ export class RedisListStorage extends Storage {
 	
 	async flush(...keys: string[]): Promise<void> {
 		let redisKeys = await this.redis.keys(this.keyHead + "*")
-		await deleteRedisKeys(redisKeys, keys)
-	}
-}
 
-export async function deleteRedisKeys(keyList: string[], keys: string[] = []) {
-	if (keys.length == 0) {
-		keyList = keyList.filter(k => keys.includes(k))
+		for (const key of redisKeys) {
+			const originalKey = this.getItemKey(key)
+			if (keys.length !== 0 && !keys.includes(originalKey)) continue
+			await this.redis.del(key)
+		}
 	}
-
-	await this.redis.del(...keyList)
 }

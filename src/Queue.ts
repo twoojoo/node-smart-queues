@@ -428,7 +428,7 @@ export class Queue<T = any> {
 	} 
 
 	async flush(...keys: string[]) {
-		if (keys?.length == 0) {
+		if (keys.length === 0) {
 			this.log(`flushing all keys items`)
 		} else {
 			keys.forEach(k => this.log(`[${k}] flushing items`))

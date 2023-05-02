@@ -1,6 +1,5 @@
 import { QueueItem, StoredCount, TTLOptions } from "../types"
 import { Redis, RedisOptions } from "ioredis"
-import { deleteRedisKeys } from "./RedisList"
 import { Storage } from "./Storage"
 
 export class RedisSetStorage extends Storage {
@@ -93,6 +92,13 @@ export class RedisSetStorage extends Storage {
 	
 	async flush(...keys: string[]): Promise<void> {
 		let redisKeys = await this.redis.keys(this.keyHead + "*")
-		await deleteRedisKeys(redisKeys, keys)
+		// console.log(redisKeys)
+		for (const key of redisKeys) {
+			const originalKey = this.getItemKey(key)
+			console.log(originalKey)
+			if (keys.length !== 0 && !keys.includes(originalKey)) continue
+				console.log(key)
+			await this.redis.del(key)
+		}
 	}
 }
