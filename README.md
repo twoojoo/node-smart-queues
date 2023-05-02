@@ -103,7 +103,7 @@ storage: redisListStorage({ host: "localhost", port: 6379 }) // TTL not availabl
 >
 >	- you absolutely need O(1) performance
 >	- you don't need to set a TTL
->	- you don't plan to add a TTL or, if you do, you don't mind losing stored data when setting restarting the queue with the norma redisStorage
+>	- you don't plan to add a TTL or, if you do, you don't mind losing cached data when replancing redisListSorage with a redisStorage
 
 ## Queue options
 
