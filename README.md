@@ -27,7 +27,7 @@
 - [Installation](#installation)
 - [Basic usage](#basic-usage)
 - [State Management](#state-management)
-	- [In-Memory Storage](#in-memory-storage)
+	- [In-memory Storage](#in-memory-storage)
 	- [Redis Storage](#redis-storage)
 - [Queue options](#queue-options)
 - [Queue methods](#queue-methods)
