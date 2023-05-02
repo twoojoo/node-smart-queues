@@ -80,7 +80,7 @@ Smart Queues use an in-memory storage system by default (not crash safe), but yo
 
 ### Redis Storage
 
-Will use Redis' lists as storage system. [ioredis](https://github.com/luin/ioredis) options must be provideded. If you think that the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
+Will use Redis' [sorted sets](https://redis.io/docs/data-types/sorted-sets/) as storage system. [ioredis](https://github.com/luin/ioredis) options must be provideded. If you think that the items pushed to the queue may be bigger than 512MB (maximum Redis record size), consider using the compression (gzip) shipped with the queue system.
 
 ```typescript
 import { Queue, redisStorage } from "node-smart-queues"
@@ -92,6 +92,8 @@ const queue = Queue<number>("my-queue", {
 	onDequeue: i => console.log(i))
 }).start();
 ```
+
+> **Why sorted sets?** that's because Redis' (lists)[https://redis.io/docs/data-types/lists/] (which would a have been a better choiche, from a performace point of view) lacks a proper TTL system. To provide this feature (and to mantain the storage compatibility when dynamically adding or removing the TTL), I prefered to take advantage Redis' a sorted sets, using the enqueue timestamp as score. 
 
 ## Queue options
 
