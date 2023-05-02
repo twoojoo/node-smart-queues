@@ -1,4 +1,4 @@
-import { QueueItem, QueueMode, StorageShiftOutput, StoredCount } from "../types"
+import { QueueItem, QueueMode, StoredCount } from "../types"
 import { Storage } from "./Storage"
 
 export class MemoryStorage extends Storage {
@@ -8,6 +8,7 @@ export class MemoryStorage extends Storage {
 
 	constructor(name: string, TTLms: number) {
 		super(name, TTLms)
+		this.runTTLCleanup()
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {

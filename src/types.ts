@@ -94,7 +94,7 @@ export type IgnoreItemCondition<T = any> = Condition<T>
 
 export type StoredCount = { [key: string]: number }
 
-export type StorageShiftOutput = {
-	storedCount: StoredCount
-	items: QueueItem[]
-}
+// export type StorageShiftOutput = {
+// 	storedCount: StoredCount
+// 	items: QueueItem[]
+// }

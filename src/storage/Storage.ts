@@ -21,6 +21,8 @@ export abstract class Storage {
 	/**Get the number of items in the queeue for all the keys*/
 	abstract getStoredCount(): Promise<StoredCount>
 
+	/**pick the first timestap available anc cleanup items that have been pushed
+	 * before that timestamp + the TTL value (recursive)*/
 	protected async runTTLCleanup() {
 		if (!this.TTLms) return
 		if (this.TTLtimer) return
@@ -41,6 +43,7 @@ export abstract class Storage {
 		}, timer)
 	}
 
+	/**retrieve the first available push timestamp*/
 	protected abstract getFirstTimestamp(): Promise<number> 
 
 	/**removes the elements inserted before the provide thresholt, returnin the number of removed items*/

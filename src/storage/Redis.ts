@@ -14,6 +14,7 @@ export class RedisStorage extends Storage {
 		this.redis = new Redis(redisOptions)
 		this.redis.on("error", (err) => { throw err })
 		this.keyHead = "n§çs§çq-" + name
+		this.runTTLCleanup()
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {
@@ -112,25 +113,6 @@ export class RedisStorage extends Storage {
 			redisKey.split(this.keyHead)[1].split(this.keySetTail)[0] :
 			redisKey.split(this.keyHead)[1]
 	}
-
-	// private runTTLCleanup() {
-	// 	if (!this.TTLms) return
-	// 	if (this.TTLtimer) return
-
-	// 	let threshold: number
-	// 	let timer: number 
-	// 	do {
-	// 		threshold = this.timestampsCache.shift()
-	// 		if (!threshold) return
-	// 		timer = (Date.now() - (threshold + this.TTLms)) * -1
-	// 	} while (timer < 0)
-
-	// 	this.TTLtimer = setTimeout(() => {
-	// 		this.TTLtimer = undefined
-	// 		this.cleanupKeys(threshold)
-	// 		this.runTTLCleanup()
-	// 	}, timer)
-	// }
 
 	protected async getFirstTimestamp(): Promise<number> {
 		return this.timestampsCache.shift()
