@@ -328,6 +328,7 @@ PAUSED tells if a queue is paused
 BLOCK commands a queue to stop dequeuing a list of keys (comma separated)
 RELEASE commands a queue to release a list of previously blocked keys (comma separated)
 BLOCKED tells if a key is blocked within a queue
+FLUSH commands a queue to flush all items or specific keys' items
 ```
 
 <br>
