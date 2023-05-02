@@ -5,10 +5,11 @@ import { Storage } from "./Storage"
 export class RedisStorage extends Storage {
 	private redis: Redis
 	private keyHead: string
-	private TTLtimer: NodeJS.Timeout
 	private keySetTail = "§$et§"
 
-	constructor(name: string, redisOptions: RedisOptions, TTLms?: number) {
+	private timestampsCache: number[] = []
+
+	constructor(name: string, redisOptions: RedisOptions, TTLms: number) {
 		super(name, TTLms)
 		this.redis = new Redis(redisOptions)
 		this.redis.on("error", (err) => { throw err })
@@ -21,7 +22,9 @@ export class RedisStorage extends Storage {
 	}
 
 	private async pushTTL(key: string, item: QueueItem) {
-		await this.redis.zadd(this.buildListKey(key), Date.now(), JSON.stringify(item))		
+		this.timestampsCache.push(item.pushTimestamp)
+		this.runTTLCleanup()
+		await this.redis.zadd(this.buildListKey(key), item.pushTimestamp, JSON.stringify(item))		
 	}
 
 	private async pushNoTTL(key: string, item: QueueItem) {
@@ -109,4 +112,44 @@ export class RedisStorage extends Storage {
 			redisKey.split(this.keyHead)[1].split(this.keySetTail)[0] :
 			redisKey.split(this.keyHead)[1]
 	}
+
+	// private runTTLCleanup() {
+	// 	if (!this.TTLms) return
+	// 	if (this.TTLtimer) return
+
+	// 	let threshold: number
+	// 	let timer: number 
+	// 	do {
+	// 		threshold = this.timestampsCache.shift()
+	// 		if (!threshold) return
+	// 		timer = (Date.now() - (threshold + this.TTLms)) * -1
+	// 	} while (timer < 0)
+
+	// 	this.TTLtimer = setTimeout(() => {
+	// 		this.TTLtimer = undefined
+	// 		this.cleanupKeys(threshold)
+	// 		this.runTTLCleanup()
+	// 	}, timer)
+	// }
+
+	protected async getFirstTimestamp(): Promise<number> {
+		return this.timestampsCache.shift()
+	}
+
+	protected async cleanupKeys(threshold: number): Promise<number> {
+		if (!this.TTLms) return
+
+		let count = 0 
+
+		const keys = await this.redis.keys(this.keyHead + "*")
+		for (const key of keys) {
+			if (!key.startsWith(this.keyHead)) continue
+			if (!key.endsWith(this.keySetTail)) continue
+			const removed = await this.redis.zremrangebyscore(key, '-inf', `${threshold}`)
+			count += removed
+		}
+
+		return count
+	}
+	
 }

@@ -4,12 +4,18 @@ import { Storage } from "./Storage"
 export class MemoryStorage extends Storage {
 	private memory: { [key: string]: QueueItem[] } = {}
 
-	constructor(name: string, TTLms?: number) {
+	private timestampsCache: number[] = []
+
+	constructor(name: string, TTLms: number) {
 		super(name, TTLms)
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {
 		if (!this.memory[key]) this.memory[key] = []
+		if (this.TTLms) {
+			this.timestampsCache.push(item.pushTimestamp)
+			this.runTTLCleanup()
+		}
 		this.memory[key].unshift(item)
 	}
 
@@ -28,7 +34,7 @@ export class MemoryStorage extends Storage {
 
 		for (let i = 0; i < count; i++) 
 			if (this.memory[key].length > 0) 
-				items.push(kind == "FIFO" ? this.memory[key].pop() :this.memory[key].shift())
+				items.push(kind == "FIFO" ? this.memory[key].pop() : this.memory[key].shift())
 
 		return items
 	}
@@ -41,5 +47,27 @@ export class MemoryStorage extends Storage {
 		}
 
 		return storedCount
+	}
+
+	protected async getFirstTimestamp(): Promise<number> {
+		return this.timestampsCache.shift()
+	}
+
+	protected async cleanupKeys(threshold: number): Promise<number> {
+		if (!this.TTLms) return
+
+		let count = 0
+
+		for (const key in this.memory) {
+			this.memory[key] = this.memory[key].filter(item => {
+				if (item.pushTimestamp > threshold) return true
+				else {
+					count++
+					return false
+				}
+			})
+		}
+
+		return count
 	}
 }

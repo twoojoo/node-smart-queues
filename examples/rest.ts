@@ -1,4 +1,4 @@
-import { QueuesPool, Queue, redisStorage } from "../src"
+import { QueuesPool, Queue, redisStorage, inMemoryStorage } from "../src"
 import { nsqServer } from "../http";
 
 (async function () {
@@ -6,8 +6,9 @@ import { nsqServer } from "../http";
 
 	const q = new Queue<number>("q1", { 
 		onDequeue: async (i) => console.log(i),
-		storage: redisStorage({ host: "localhost", port: 6379 }, 2000),
-		dequeueInterval: 2000,
+		storage: inMemoryStorage(800),
+		// storage: redisStorage({ host: "localhost", port: 6379 }, 800),
+		dequeueInterval: 2500,
 		onDequeueAwaited: true,
 		gzip: true,
 		mode: "FIFO"
