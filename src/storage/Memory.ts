@@ -4,8 +4,8 @@ import { Storage } from "./Storage"
 export class MemoryStorage extends Storage {
 	private memory: { [key: string]: QueueItem[] } = {}
 
-	constructor(name: string) {
-		super(name)
+	constructor(name: string, TTLms?: number) {
+		super(name, TTLms)
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {

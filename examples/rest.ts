@@ -6,10 +6,11 @@ import { nsqServer } from "../http";
 
 	const q = new Queue<number>("q1", { 
 		onDequeue: async (i) => console.log(i),
-		storage: redisStorage({ host: "localhost", port: 6379 }),
+		storage: redisStorage({ host: "localhost", port: 6379 }, 2000),
 		dequeueInterval: 2000,
 		onDequeueAwaited: true,
 		gzip: true,
+		mode: "FIFO"
 	}).start()
 
 	let count = 0

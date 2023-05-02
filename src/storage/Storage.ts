@@ -1,11 +1,7 @@
 import { QueueItem, StoredCount } from "../types";
 
 export abstract class Storage {
-	protected name: string
-
-	constructor(name: string) {
-		this.name = name
-	}
+	constructor(protected name: string, protected TTLms: number) {}
 
 	getName() {
 		return this.name

@@ -5,19 +5,35 @@ import { Storage } from "./Storage"
 export class RedisStorage extends Storage {
 	private redis: Redis
 	private keyHead: string
+	private TTLtimer: NodeJS.Timeout
+	private keySetTail = "§$et§"
 
-	constructor(name: string, redisOptions: RedisOptions) {
-		super(name)
+	constructor(name: string, redisOptions: RedisOptions, TTLms?: number) {
+		super(name, TTLms)
 		this.redis = new Redis(redisOptions)
 		this.redis.on("error", (err) => { throw err })
 		this.keyHead = "n§çs§çq-" + name
 	}
 
 	async push(key: string, item: QueueItem): Promise<void> {
+		if (this.TTLms) await this.pushTTL(key, item) 
+		else await this.pushNoTTL(key, item)
+	}
+
+	private async pushTTL(key: string, item: QueueItem) {
+		await this.redis.zadd(this.buildListKey(key), Date.now(), JSON.stringify(item))		
+	}
+
+	private async pushNoTTL(key: string, item: QueueItem) {
 		await this.redis.lpush(this.buildListKey(key), JSON.stringify(item));
 	}
 
 	async popRight(key: string, count: number): Promise<QueueItem[]> {
+		if (this.TTLms) return await this.popRightTTL(key, count)
+		else return await this.popRightNoTTL(key, count)
+	}
+
+	private async popRightNoTTL(key: string, count: number): Promise<QueueItem[]> {
 		const items: QueueItem[] = []
 
 		for (let i = 0; i < count; i++) {
@@ -28,7 +44,21 @@ export class RedisStorage extends Storage {
 		return items
 	}
 
+	/**FIFO: gets the lowest score (oldest) elements*/
+	async popRightTTL(key: string, count: number): Promise<QueueItem[]> {
+		const redisKey = this.buildListKey(key) 
+		// 0 to 0 is the first element, so count - 1
+		const items = (await this.redis.zrange(redisKey, 0, count - 1)).map(r => JSON.parse(r)) as QueueItem[]
+		await this.redis.zremrangebyrank(redisKey, 0, count - 1)
+		return items
+	}
+
 	async popLeft(key: string, count: number): Promise<QueueItem[]> {
+		if (this.TTLms) return await this.popLeftTTL(key, count)
+		else return await this.popLeftNoTTL(key, count)
+	}
+
+	async popLeftNoTTL(key: string, count: number): Promise<QueueItem[]> {
 		const items: QueueItem[] = []
 
 		for (let i = 0; i < count; i++) {
@@ -39,24 +69,44 @@ export class RedisStorage extends Storage {
 		return items
 	}
 
+	/**LIFO: gets the higher score (youngest) elements*/
+	async popLeftTTL(key: string, count: number): Promise<QueueItem[]> {
+		const redisKey = this.buildListKey(key)
+		const items = (await this.redis.zrange(redisKey, 0, count - 1, "REV")).map(r => JSON.parse(r)) as QueueItem[]
+		await this.redis.zremrangebyrank(redisKey, count * (-1), -1)
+		return items
+	}
+
 	async getStoredCount(): Promise<StoredCount> {
 		const storedCount: StoredCount = {}
 
 		const keys = await this.redis.keys(this.keyHead + "*")
 
+		// if (this.TTLms) {
 		for (const key of keys) {
 			if (!key.startsWith(this.keyHead)) continue
-			storedCount[this.getItemKey(key)] = await this.redis.llen(key)
-		}
+			if (this.TTLms) {
+				try {
+					storedCount[this.getItemKey(key)] = await this.redis.zcount(key, '-inf', 'inf')
+				} catch (err) {
+					if (err.message.includes("WRONGTYPE")) continue
+
+				}
+			} else storedCount[this.getItemKey(key)] = await this.redis.llen(key)
+		}	
 
 		return storedCount
 	}
 
 	private buildListKey(key: string) {
-		return this.keyHead + key
+		return this.TTLms ? 
+			this.keyHead + key + this.keySetTail :
+			this.keyHead + key
 	}
 
 	private getItemKey(redisKey: string) {
-		return redisKey.split(this.keyHead)[1]
+		return this.TTLms ?
+			redisKey.split(this.keyHead)[1].split(this.keySetTail)[0] :
+			redisKey.split(this.keyHead)[1]
 	}
 }

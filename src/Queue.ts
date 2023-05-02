@@ -142,8 +142,8 @@ export class Queue<T = any> {
 
 				//pop items
 				const items = this.getPopModeIternal(key) == "FIFO" ?
-					await this.storage.popRight(key, dequeueSize) : 
-					await this.storage.popLeft(key, dequeueSize)
+					await this.storage.popRight(key, dequeueSize) : //FIFO
+					await this.storage.popLeft(key, dequeueSize) //LIFO
 
 				if (items.length > 0) {
 					if (keyRules.dequeueInterval || this.globalRules.dequeueInterval) this.lockKey(key)
@@ -302,7 +302,7 @@ export class Queue<T = any> {
 		let retryCount = 0
 		while (retryCount < maxRetry) {
 			try {
-				this.log(`[${key}] dequeued item [${Date.now() - start}ms]`)
+				this.log(`[${key}] dequeued item [${Date.now() - start}ms] (${this.getPopModeIternal(key)})`)
 				await callback(item, key, this)
 				break
 			} catch (error) {
@@ -335,7 +335,7 @@ export class Queue<T = any> {
 	private getPopModeIternal(key: string): QueueMode {
 		if (this.keyRules[key].mode == "FIFO") return "FIFO"
 		if (this.keyRules[key].mode == "LIFO") return "LIFO"
-		if (this.globalRules.mode) this.globalRules.mode
+		if (this.globalRules.mode) return this.globalRules.mode
 		else return "FIFO"
 	}
 

@@ -8,8 +8,8 @@ const LINE_END = SEPARATOR + "\n"
 export class FileSystemStorage extends Storage {
 	private file: string
 
-	constructor(name: string, file: string) {
-		super(name)
+	constructor(name: string, file: string, TTLms?: number) {
+		super(name, TTLms)
 		this.file = file
 		const fileExists = fs.existsSync(file)
 		if (!fileExists) fs.writeFileSync(file, "")
