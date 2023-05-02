@@ -234,10 +234,10 @@ await queue.getStorageCount()
 	..etc..
 }*/
 
-//flush all items in the queue
+//flush all items in the queue WITHOUT dequeueing them
 await queue.flush()
 
-//flush all items belonging to specific keys
+//flush all items belonging to specific keys WITHOUT dequeueing them
 await queue.flush("key-1", "key-2" /*....*/)
 ```
 

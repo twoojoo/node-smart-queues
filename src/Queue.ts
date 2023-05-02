@@ -427,6 +427,7 @@ export class Queue<T = any> {
 		return !!this.keyRules[key].blocked
 	} 
 
+	/**Flush all items (or keys-specific itmes) in the queue WITHOUT dequeueing them*/
 	async flush(...keys: string[]) {
 		if (keys.length === 0) {
 			this.log(`flushing all keys items`)
