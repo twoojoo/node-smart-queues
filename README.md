@@ -86,7 +86,7 @@ Will use Redis' [sorted sets](https://redis.io/docs/data-types/sorted-sets/) as 
 import { Queue, redisStorage } from "node-smart-queues"
 
 const queue = Queue<number>("my-queue", {
-	storage: redisStorage({ host: "localhost", port: 6379 }),
+	storage: redisStorage({ host: "localhost", port: 6379, TTLms: 10000 }), //TTL is optional
 	gzip: true,
 	dequeueInterval: 1000,
 	onDequeue: i => console.log(i))
