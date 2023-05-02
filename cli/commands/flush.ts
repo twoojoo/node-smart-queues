@@ -18,7 +18,7 @@ export const flush: Choiche = {
 		if (keys) {
 			resp = await (await request(global.url + "queue/" + name + "/flush/" + keys)).text()
 		} else {
-			resp = await (await request(global.url + "queue/" + name + "/flush/" + keys)).text()
+			resp = await (await request(global.url + "queue/" + name + "/flush")).text()
 		}
 
 		console.log(resp)
