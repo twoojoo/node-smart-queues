@@ -26,8 +26,8 @@
 ### Table of Contents
 - [Installation](#installation)
 - [Basic usage](#basic-usage)
-- [Stateful](#stateful)
-	- [File System Storage](#file-system-storage)
+- [State Management](#state-management)
+	- [In-Memory Storage](#in-memory-storage)
 	- [Redis Storage](#redis-storage)
 - [Queue options](#queue-options)
 - [Queue methods](#queue-methods)
@@ -72,23 +72,11 @@ const queue = Queue<number>("my-queue", {
 })()
 ```
 
-## Stateful
+## State Management
+
+### In-memory storage
 
 Smart Queues use an in-memory storage system by default (not crash safe), but you can change this setting by using a different storage system. When using a safe storage system, the queue will automatically recover the hanging state as soon as the program gets restarted. 
-
-### File System Storage
-
-Will save the queue state in the provided file (will create it if it doesn't exist yet). The same file can be shared by multiple concurrent queues. If the file already exists be sure it's empty on the first run.
-
-```typescript
-import { Queue, fileSystemStorage } from "node-smart-queues"
-
-const queue = Queue<number>("my-queue", {
-	storage: fileSystemStorage("/path/to/file"),
-	dequeueInterval: 1000,
-	onDequeue: i => console.log(i))
-}).start();
-```
 
 ### Redis Storage
 
