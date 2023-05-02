@@ -93,7 +93,16 @@ const queue = Queue<number>("my-queue", {
 }).start();
 ```
 
-> **Why sorted sets?** that's because Redis' lists (which would a have been a better choiche, from a performace point of view) lacks a proper TTL system. To provide this feature (and to mantain the storage recovery compatibility when dynamically adding or removing the TTL), I prefered to take advantage of Redis' sorted sets, using the enqueue timestamp as score, which is automatically checked for cleanups when a TTL is provided. This mean that the enqueing and dequeing time complexity will be **O(log n)** instead of **O(1)**, which shouldn't be a big performance loss in a queue context, unless items are supposed to stay enqueued for a long time and a lot of items get enqueued.
+> **Why sorted sets?** that's because Redis' lists (which would a have been a better choiche, from a performace point of view) lacks a proper TTL system. To provide this feature (and to mantain the storage recovery compatibility when dynamically adding or removing the TTL), I prefered to take advantage of Redis' sorted sets, using the enqueue timestamp as score, which is automatically checked for cleanups when a TTL is provided. This mean that the enqueing and dequeing time complexity will be **O(log n)** instead of **O(1)**, which shouldn't be a big performance loss in a queue context, unless items are supposed to stay enqueued for a long time and a lot of items get enqueued. However, if you really need O(1) performance a spceific redis list storage system is available:
+
+```typescript
+storage: redisListStorage({ host: "localhost", port: 6379 }) // TTL not available
+```
+
+> use this if
+	- you absolutely need O(1) performance
+	- you don't need to set a TTL
+	- you don't plan to add a TTL or, if you do, you don't mind losing stored data when setting restarting the queue with the norma redisStorage
 
 ## Queue options
 

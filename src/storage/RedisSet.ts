@@ -2,7 +2,7 @@ import { QueueItem, StoredCount, TTLOptions } from "../types"
 import { Redis, RedisOptions } from "ioredis"
 import { Storage } from "./Storage"
 
-export class RedisStorage extends Storage {
+export class RedisSetStorage extends Storage {
 	private redis: Redis
 	private keyHead: string
 	private keySetTail = "§$et§"
