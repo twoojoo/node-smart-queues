@@ -98,3 +98,7 @@ export type StoredCount = { [key: string]: number }
 // 	storedCount: StoredCount
 // 	items: QueueItem[]
 // }
+
+export type TTLOptions = {
+	TTLms?: number
+}

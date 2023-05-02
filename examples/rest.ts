@@ -6,8 +6,8 @@ import { nsqServer } from "../http";
 
 	const q = new Queue<number>("q1", { 
 		onDequeue: async (i) => console.log(i),
-		// storage: inMemoryStorage(800),
-		storage: redisStorage({ host: "localhost", port: 6379 }, 10000),
+		// storage: inMemoryStorage({ TTLms: 800 }),
+		storage: redisStorage({ host: "localhost", port: 6379, TTLms: 10000 }),
 		dequeueInterval: 2500,
 		onDequeueAwaited: true,
 		gzip: true,

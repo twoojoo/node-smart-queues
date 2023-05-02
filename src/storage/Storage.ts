@@ -26,21 +26,23 @@ export abstract class Storage {
 	 * before that timestamp + the TTL value (recursive). Use forceThreshold option to
 	 * force a cleanup with the current datetime as threshold, to be run in the storage
 	 * constructor.*/
-	protected async runTTLCleanup(opts?: { forceThreshold?: boolean }) {
+	protected async runTTLCleanup(opts: { forceThreshold: boolean } = { forceThreshold: false }) {
+		const { forceThreshold } = opts
+
 		if (!this.TTLms) {
 			this.initialized = true
 			return
 		}
-		
+
 		if (this.TTLtimer) return
 
 		let threshold: number
 		let timer: number 
 		do {
 			threshold = await this.getFirstTimestamp()
-			if (!threshold && !opts?.forceThreshold) return
-			if (!threshold && opts?.forceThreshold) threshold = Date.now()
-			timer = (Date.now() - (threshold + this.TTLms)) * -1
+			if (!threshold && !forceThreshold) return
+			if (!threshold && forceThreshold) threshold = Date.now()
+			timer = (threshold + this.TTLms) - Date.now()
 		} while (timer < 0)
 
 		this.TTLtimer = setTimeout(async () => {
@@ -48,13 +50,13 @@ export abstract class Storage {
 			const removedCount = await this.cleanupKeys(threshold)
 			if (removedCount) console.log(new Date(), "# nsq #", `[${this.name}]`, "cleaned up", removedCount, `item [TTL: ${this.TTLms} ms]`)
 			await this.runTTLCleanup()
-			if (opts?.forceThreshold) this.initialized = true
-		}, opts?.forceThreshold ? 0 : timer)
+			if (forceThreshold) this.initialized = true
+		}, forceThreshold ? 0 : timer)
 	}
 
 	/**retrieve the first available push timestamp*/
 	protected abstract getFirstTimestamp(): Promise<number> 
 
-	/**removes the elements inserted before the provide thresholt, returnin the number of removed items*/
+	/**removes the elements inserted before the provided threshold, returning the number of removed items*/
 	protected abstract cleanupKeys(threshold: number): Promise<number>
 }

@@ -1,4 +1,4 @@
-import { QueueItem, QueueMode, StoredCount } from "../types"
+import { QueueItem, QueueMode, StoredCount, TTLOptions } from "../types"
 import { Storage } from "./Storage"
 
 export class MemoryStorage extends Storage {
@@ -6,8 +6,8 @@ export class MemoryStorage extends Storage {
 
 	private timestampsCache: number[] = []
 
-	constructor(name: string, TTLms: number) {
-		super(name, TTLms)
+	constructor(name: string, opts: TTLOptions) {
+		super(name, opts.TTLms)
 		this.runTTLCleanup()
 	}
 

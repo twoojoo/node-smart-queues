@@ -2,15 +2,16 @@
 import { MemoryStorage } from "./Memory"
 import { RedisStorage } from "./Redis"
 import { RedisOptions } from "ioredis"
+import { TTLOptions } from "../types"
 
-export function redisStorage(redis: RedisOptions, TTLms?: number) {
-	return (name: string) => new RedisStorage(name, redis, TTLms)
+export function redisStorage(redis: RedisOptions & TTLOptions) {
+	return (name: string) => new RedisStorage(name, redis)
 }
 
 // export function fileSystemStorage(file: string) {
 // 	return (name: string) => new FileSystemStorage(name, file)
 // }
 
-export function inMemoryStorage(TTLms?: number) {
-	return (name: string) => new MemoryStorage(name, TTLms)
+export function inMemoryStorage(opts: TTLOptions = {}) {
+	return (name: string) => new MemoryStorage(name, opts)
 }
