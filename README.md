@@ -3,7 +3,7 @@
   <img src="./images/logo_size_invert.jpg" width="100%" />
   <br>
   <br>
-		<p align="center">A stateful queue system for Node.js<br>that focuses on <b>versatility</b>, <b>control</b> and <b>ease of use</b><p>
+		<p align="center">A stateful tasks queue system for Node.js<br>that focuses on <b>versatility</b>, <b>control</b> and <b>ease of use</b><p>
   </p>
 	<br>
 		<div width="100%" align="center">Features:</div>
