@@ -437,4 +437,8 @@ export class Queue<T = any> {
 
 		await this.storage.flush(...keys)
 	}
+
+	listKnownKeys() {
+		return Object.keys(this.keyRules)
+	}
 }
