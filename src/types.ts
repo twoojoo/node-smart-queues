@@ -89,15 +89,9 @@ export type OnPushCallback<T = any> = GenericQueueCallback<T>
 export type OnMaxRetryCallback<T = any> = (err?: Error, item?: T, key?: string, queue?: Queue) => any
 
 type Condition<T = any> = (item: T) => boolean
-// export type CloneCondition<T = any> = Condition<T>
 export type IgnoreItemCondition<T = any> = Condition<T>
 
 export type StoredCount = { [key: string]: number }
-
-// export type StorageShiftOutput = {
-// 	storedCount: StoredCount
-// 	items: QueueItem[]
-// }
 
 export type TTLOptions = {
 	TTLms?: number
