@@ -11,7 +11,7 @@ import { nsqServer } from "../http";
 		dequeueInterval: 2500,
 		onDequeueAwaited: true,
 		gzip: true,
-		mode: "FIFO"
+		mode: "LIFO"
 	}).start()
 
 	let count = 0
