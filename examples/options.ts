@@ -13,7 +13,7 @@ import { Queue, redisStorage } from "../src"
 		ignore: ["k5"],
 		ignoreNotPrioritized: true, //default false
 		randomPriority: false, //default false 
-		ignoreItemCondition: i => i >= 12,
+		ignoreItemOn: i => i >= 12,
 		minInterval: 2000, //default 0
 		maxRetry: 5, //default 1 attempt
 		onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q),
@@ -25,7 +25,7 @@ import { Queue, redisStorage } from "../src"
 		dequeueSize: 2,
 		onDequeue: async (i, k, q) => console.log("success k2:", i, k, q),
 		onDequeueAwaited: false,
-		ignoreItemCondition: i => i <= 3,
+		ignoreItemOn: i => i <= 3,
 		minInterval: 5000,
 		maxRetry: 1,
 		onMaxRetry: async (err, i, k, q) => console.log("error k2:", err, i, k, q),

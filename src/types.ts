@@ -53,7 +53,7 @@ export type KeyRules<T> = {
 	mode?: QueueMode
 	lastLockTimestamp?: number, //used for the inteval management
 	locked?: boolean //used for the inteval management
-	ignoreItemCondition?: IgnoreItemCondition<T>
+	ignoreItemOn?: IgnoreItemCondition<T>
 	maxRetry?: number
 	onMaxRetry?: OnMaxRetryCallback<T>
 	onMaxRetryAwaited?: boolean

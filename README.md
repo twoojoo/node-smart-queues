@@ -122,31 +122,31 @@ const q1 = new Queue<number>("q1", {
 	logger: true, //toggle the logger (defalut true)
 	gzip: true, //toggle gzip compression (default false)
 	dequeueSize: 2, //set nuber of item per dequeue (default 1)
-	onDequeue: async (i, k, q) => console.log("success:", i, k, q),
 	onDequeueAwaited: false, //default true
 	priority: ["k2", "k3", "k4"], //higher to lower
 	ignore: ["k5"],
 	ignoreNotPrioritized: true, //default false
 	randomPriority: false, //default false
-	ignoreItemCondition: i => i >= 12,
 	minInterval: 2000, //run a dequeue every 2secs (default 0)
 	maxRetry: 5, //max onDequeue attempts (default 1 - no errors allowed)
-	onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q), //if last retry errored
 	onMaxRetryAwaited: true, //default true
 	mode: "LIFO", //default FIFO
+	ignoreItemOn: i => i >= 12,
+	onDequeue: async (i, k, q) => console.log("success:", i, k, q),
+	onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q), //if last retry errored
 })
 
 //key-specific options
 q1.key("k1", {
 	dequeueSize: 2,
-	onDequeue: async (i, k, q) => console.log("success k2:", i, k, q),
 	onDequeueAwaited: false,
-	ignoreItemCondition: i => i <= 3,
 	minInterval: 5000,
 	maxRetry: 1,
-	onMaxRetry: async (err, i, k, q) => console.log("error k2:", err, i, k, q),
 	onMaxRetryAwaited: false,
 	mode: "FIFO",
+	ignoreItemOn: i => i <= 3,
+	onDequeue: async (i, k, q) => console.log("success k2:", i, k, q),
+	onMaxRetry: async (err, i, k, q) => console.log("error k2:", err, i, k, q),
 })
 ```
 
@@ -167,7 +167,7 @@ await queue.enqueue("my-key", 3, { throwErrors: false /*default true*/})
 		0 = item enqueued
 		1 = key is ignored
 		2 = key not prioritized (only with ignoreNotPrioritized option)
-		3 = missing condition (only with ignoreItemCondition option)
+		3 = missing condition (only with ignoreItemOn option)
 		4 = an error occurred
 
 		note: case 1,2 and 3 won't cause an error

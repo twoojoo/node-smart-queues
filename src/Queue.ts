@@ -250,12 +250,12 @@ export class Queue<T = any> {
 
 			//check if there is a condition for the item to 
 			//be ignored and calculate the condition result
-			const ignoreItemCondition = 
-				this.keyRules[key].ignoreItemCondition || 
-				this.globalRules.ignoreItemCondition
+			const ignoreItemOn = 
+				this.keyRules[key].ignoreItemOn || 
+				this.globalRules.ignoreItemOn
 
-			if (ignoreItemCondition)
-				if (ignoreItemCondition(item))
+			if (ignoreItemOn)
+				if (ignoreItemOn(item))
 					return { 
 						enqueued: false, 
 						code: EnqueueResultCode.MissingCondition,
