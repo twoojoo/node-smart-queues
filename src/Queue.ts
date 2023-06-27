@@ -219,7 +219,10 @@ export class Queue<T = any> {
 
 		this.paused = true
 		this.looping = false
-		if (timer || timer == 0) setTimeout(() => this.start(), timer)
+		
+		if (timer || timer == 0) {
+			setTimeout(() => this.start(), timer)
+		}
 
 		return this
 	}
