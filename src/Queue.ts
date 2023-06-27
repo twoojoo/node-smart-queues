@@ -84,7 +84,7 @@ export class Queue<T = any> {
 
 	/**Look in the storage for keys that still have some pending items*/
 	private async recover() {
-		if (!this.alreadyStartedOnce) { //only the first time
+		// if (!this.alreadyStartedOnce) { //only the first time
 			this.log(`recovering pending items from storage`)
 
 			const storedCount = await this.storage.getStoredCount()
@@ -99,8 +99,9 @@ export class Queue<T = any> {
 
 			this.alreadyStartedOnce = true
 			this.storedJobs += recoverCount
+			
 			this.log(`recovered ${recoverCount} items from storage`)
-		}
+		// }
 	}
 
 	private async startLoop() {
@@ -158,8 +159,7 @@ export class Queue<T = any> {
 					await this.storage.popRight(key, dequeueSize) : //FIFO
 					await this.storage.popLeft(key, dequeueSize) //LIFO
 
-				//exit loop if any item gets processed to 
-				//force a priority recalculation
+				//exit loop if any item gets processed to force a priority recalculation
 				if (items.length > 0) {
 					await this.processDequeuedItems(items, key, keyRules, start)
 					break 
@@ -219,7 +219,7 @@ export class Queue<T = any> {
 
 		this.paused = true
 		this.looping = false
-		
+
 		if (timer || timer == 0) {
 			setTimeout(() => this.start(), timer)
 		}
@@ -272,7 +272,7 @@ export class Queue<T = any> {
 
 			this.loopLocked = false
 			this.storedJobs++
-			this.startLoop()
+			// this.startLoop()
 
 			return { 
 				enqueued: true, 
