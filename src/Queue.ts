@@ -36,6 +36,7 @@ export class Queue<T = any> {
 	private looping: boolean = false
 	private paused: boolean = false
 	private loopLocked: boolean = true
+	private storedJobs: number = 0
 
 	// rules
 	private globalRules: GlobalRules<T> = {}
@@ -97,6 +98,7 @@ export class Queue<T = any> {
 			}
 
 			this.alreadyStartedOnce = true
+			this.storedJobs += recoverCount
 			this.log(`recovered ${recoverCount} items from storage`)
 		}
 	}
@@ -105,34 +107,43 @@ export class Queue<T = any> {
 		if (this.looping) return
 		this.looping = true
 
+		//prevent multiple running intervals
 		clearInterval(this.mainInterval)
 
+		//recover sotred jobs anytime the queue is restarted
 		await this.recover()
 
+		//spin up interval
 		this.mainInterval = setInterval(async () => {
 			const start = Date.now()
 
+			//Stop interval if queue is paused
+			//Reset stored jobs counter since new recover will be executed when queue is restarted
 			if (this.paused) {
+				this.storedJobs = 0
 				clearInterval(this.mainInterval)
 				return
 			}
 
+			//close iteration if no stored jobs
+			if (this.storedJobs < 0) this.storedJobs = 0 //fix any error
+			if (this.storedJobs == 0) return
+
+			//kill iteration if an iteration is still running
 			if (this.loopLocked) return
-			//kill any other interval callback while
-			//the current one is active
 			this.loopLocked = true
 
+			//kill iteration if storace is not yet initialized
 			if (!this.storage.initialized) return
 
+			//process all keys in a certain order
 			for (const key of this.calculatePriority()) {
 				const keyRules = this.keyRules[key] || {}
 
-				//skip the key if an onDequeue hook is not provided 
-				//(maybe remove this feature and just pop)
+				//skip the key if an onDequeue hook is not provided (maybe remove this feature and just pop)
 				if (!keyRules.onDequeue && !this.globalRules.onDequeue) continue
 
-				//if the key is locked (due to delay) check if the delay is expired.
-				//If so unlock key and go on, else coninue to the next key
+				//if the key is locked (due to interval) check if the interval is expired. If so unlock key and go on, else coninue to the next key
 				if (keyRules.locked) {
 					const intervalSize = keyRules.dequeueInterval || this.globalRules.dequeueInterval
 					if ((Date.now() - keyRules.lastLockTimestamp) >= intervalSize) this.unlockKey(key)
@@ -142,40 +153,43 @@ export class Queue<T = any> {
 				//get the number of items to pop
 				const dequeueSize = keyRules.dequeueSize || this.globalRules.dequeueSize || 1
 
-				//pop items
+				//dequeue items
 				const items = this.getPopModeIternal(key) == "FIFO" ?
 					await this.storage.popRight(key, dequeueSize) : //FIFO
 					await this.storage.popLeft(key, dequeueSize) //LIFO
 
+				//exit loop if any item gets processed to 
+				//force a priority recalculation
 				if (items.length > 0) {
-					if (keyRules.dequeueInterval || this.globalRules.dequeueInterval) this.lockKey(key)
-
-					for (let item of items) {
-						const pItem = await this.parseQueueItem(item)
-						// get the correct calòback to execute (and if must be awaited or not)
-						if (keyRules.onDequeue && !keyRules.onDequeueAwaited) this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
-						else if (keyRules.onDequeue && keyRules.onDequeueAwaited) await this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
-						else if (this.globalRules.onDequeue && !this.globalRules.onDequeueAwaited) await this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
-						else if (this.globalRules.onDequeue && this.globalRules.onDequeueAwaited) this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
-					}
-
-					// unlock the loop only if there the 
-					// queue is completely empty
-					// const storedCount = await this.getStorageCount();
-					// for (let count of Object.values(storedCount)) {
-					// 	if (count != 0) this.loopLocked = false
-					// }
- 	
-					//break the loop any time something is popped
-					//to force a priority recalculation
-					break
-				}
+					await this.processDequeuedItems(items, key, keyRules, start)
+					break 
+				}				
 			}
 			
 			this.loopLocked = false 
 		}, this.loopRate)
 
 		this.looping = false
+	}
+
+	/**Process each dequeued item deciding if it has to be run asyncronously and what callback must be used*/
+	private async processDequeuedItems(items: QueueItem[], key: string, keyRules: KeyRules<T>, start: number) {
+		if (keyRules.dequeueInterval || this.globalRules.dequeueInterval) this.lockKey(key)
+
+		for (let item of items) {
+			const pItem = await this.parseQueueItem(item)
+
+			// get the correct callback to execute (and if must be awaited or not)
+			if (keyRules.onDequeue && !keyRules.onDequeueAwaited) {
+				this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start)
+			} else if (keyRules.onDequeue && keyRules.onDequeueAwaited) {
+				await this.popItemFromQueue(key, pItem.value, keyRules.onDequeue, start) 
+			} else if (this.globalRules.onDequeue && !this.globalRules.onDequeueAwaited) {
+				await this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
+			} else if (this.globalRules.onDequeue && this.globalRules.onDequeueAwaited) {
+				this.popItemFromQueue(key, pItem.value, this.globalRules.onDequeue, start)
+			}
+		}
 	}
 
 	/**make the loop skip a key*/
@@ -254,6 +268,7 @@ export class Queue<T = any> {
 			await this.pushItemInStorage(key, item, pushTimestamp)
 
 			this.loopLocked = false
+			this.storedJobs++
 			this.startLoop()
 
 			return { 
@@ -317,6 +332,8 @@ export class Queue<T = any> {
 				}
 			}
 		}
+
+		this.storedJobs--
 	}
 
 	/**Ignores items pushed for the provided keys (dosen't override previously ignored key)
