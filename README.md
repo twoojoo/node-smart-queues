@@ -8,7 +8,7 @@
 	<br>
 		<div width="100%" align="center">Features:</div>
 		<div width="100%" align="center"><b>Crash safe (automatic recovery)</b></div>
-		<div width="100%" align="center"><b>Stateful (Redis, file system)</b></div>
+		<div width="100%" align="center"><b>Stateful (Redis)</b></div>
 		<!-- <div width="100%" align="center"><b>Concurrent queues</b></div> -->
 		<div width="100%" align="center"><b>Tasks keys based</b></div>
 		<div width="100%" align="center"><b>Timed dequeue</b></div>
