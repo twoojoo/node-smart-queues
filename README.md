@@ -111,7 +111,7 @@ storage: redisListStorage({ host: "localhost", port: 6379 }) // TTL not availabl
 Queue options can be of two types:
 
 - **Global**: valid for all job keys (overidden by single key-specific options)
-- **Key-specific**: valid for a single key (override the correspondant global property)
+- **Key-specific**: valid for a single key (override the correspondant global option)
 
 Here's an overview of all the available queue options:
 
