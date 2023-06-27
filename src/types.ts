@@ -49,6 +49,22 @@ export type QueueItemParsed<T> = {
 	value: T
 }
 
+export type RateLimitHook<T> = (key?: string, lastItem?: T) => {}
+
+export type RateLimit<T> = {
+	/**maximum number of dequeued items in a window*/
+	max: number,
+
+	/**window size in milliseconds (overridden by resetCron option)*/
+	window: number 
+
+	/**Reset cron (overrides window option)*/
+	resetCron: string
+
+	/**Callback triggered when limit is reached*/
+	hook?: RateLimitHook<T>
+}	
+
 export type KeyRules<T> = {
 	mode?: QueueMode
 	lastLockTimestamp?: number, //used for the inteval management
@@ -62,6 +78,7 @@ export type KeyRules<T> = {
 	minInterval?: number
 	dequeueSize?: number
 	blocked?: boolean
+	rateLimit?: RateLimit<T>
 }
 
 export type KeyOptions<T> = Omit<KeyRules<T>, 'lastLockTimestamp' | 'locked' | 'blocked'>
