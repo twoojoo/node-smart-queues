@@ -31,7 +31,6 @@ export class Queue<T = any> {
 	private logger: boolean = true
 
 	// loop control
-	private alreadyStartedOnce: boolean = false
 	private mainInterval: NodeJS.Timer = undefined 
 	private looping: boolean = false
 	private paused: boolean = false
@@ -84,24 +83,20 @@ export class Queue<T = any> {
 
 	/**Look in the storage for keys that still have some pending items*/
 	private async recover() {
-		// if (!this.alreadyStartedOnce) { //only the first time
-			this.log(`recovering pending items from storage`)
+		this.log(`recovering pending items from storage`)
 
-			const storedCount = await this.storage.getStoredCount()
+		const storedCount = await this.storage.getStoredCount()
 
-			let recoverCount = 0
-			const knownKeys = Object.keys(this.keyRules)
-			for (let [key, count] of Object.entries(storedCount)) {
-				if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
-				this.loopLocked = false
-				recoverCount += count
-			}
+		let recoverCount = 0
+		const knownKeys = Object.keys(this.keyRules)
+		for (let [key, count] of Object.entries(storedCount)) {
+			if (!knownKeys.includes(key)) this.keyRules[key] = this.defaultKeyRules()
+			this.loopLocked = false
+			recoverCount += count
+		}
 
-			this.alreadyStartedOnce = true
-			this.storedJobs += recoverCount
-			
-			this.log(`recovered ${recoverCount} items from storage`)
-		// }
+		this.storedJobs += recoverCount			
+		this.log(`recovered ${recoverCount} items from storage`)
 	}
 
 	private async startLoop() {
@@ -229,8 +224,7 @@ export class Queue<T = any> {
 
 	/**Push an item in the queue for a certain key
 	 * @param key - provide a key (* refers to all keys and will throw an error when used as a key)
-	 * @param item - item to be pushed in the queue
-	 * */
+	 * @param item - item to be pushed in the queue */
 	async enqueue(key: string, item: T, options: EnqueueOptions = {}): Promise<EnqueueResult> {
 		try {
 			const pushTimestamp = Date.now()
@@ -272,7 +266,6 @@ export class Queue<T = any> {
 
 			this.loopLocked = false
 			this.storedJobs++
-			// this.startLoop()
 
 			return { 
 				enqueued: true, 
