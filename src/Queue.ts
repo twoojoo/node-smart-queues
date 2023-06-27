@@ -146,7 +146,7 @@ export class Queue<T = any> {
 
 				//if the key is locked (due to interval) check if the interval is expired. If so unlock key and go on, else coninue to the next key
 				if (keyRules.locked) {
-					const intervalSize = keyRules.dequeueInterval || this.globalRules.dequeueInterval
+					const intervalSize = keyRules.minInterval || this.globalRules.minInterval
 					if ((Date.now() - keyRules.lastLockTimestamp) >= intervalSize) this.unlockKey(key)
 					else continue
 				}
@@ -174,7 +174,7 @@ export class Queue<T = any> {
 
 	/**Process each dequeued item deciding if it has to be run asyncronously and what callback must be used*/
 	private async processDequeuedItems(items: QueueItem[], key: string, keyRules: KeyRules<T>, start: number) {
-		if (keyRules.dequeueInterval || this.globalRules.dequeueInterval) this.lockKey(key)
+		if (keyRules.minInterval || this.globalRules.minInterval) this.lockKey(key)
 
 		for (let item of items) {
 			const pItem = await this.parseQueueItem(item)

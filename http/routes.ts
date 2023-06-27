@@ -130,10 +130,10 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 		handler: async (req: any, rep) => {
 			const queue = getQueue(pool, req.params.name)
 			if (!req.query.time) rep.status(400).send("time required")
-			const dequeueInterval = parseInt(req.query.time)
-			if (isNaN(dequeueInterval)) rep.status(400).send("time must be a valid number")
-			console.log(dequeueInterval)
-			queue.options({ dequeueInterval })
+			const minInterval = parseInt(req.query.time)
+			if (isNaN(minInterval)) rep.status(400).send("time must be a valid number")
+			console.log(minInterval)
+			queue.options({ minInterval })
 			rep.send()
 		}
 	}, {
@@ -144,9 +144,9 @@ export function getRoutes(pool: QueuePool): RouteOptions[] {
 			const key = req.params.key
 			if (!key) rep.status(400).send("key required")
 			if (!req.query.time) rep.status(400).send("time required")
-			const dequeueInterval = parseInt(req.query.time)
-			if (isNaN(dequeueInterval)) rep.status(400).send("time must be a valid number")
-			queue.options({ dequeueInterval })
+			const minInterval = parseInt(req.query.time)
+			if (isNaN(minInterval)) rep.status(400).send("time must be a valid number")
+			queue.options({ minInterval })
 			rep.send()
 		}
 	},{

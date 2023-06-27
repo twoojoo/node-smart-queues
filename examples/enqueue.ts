@@ -3,7 +3,7 @@ import { Queue } from "../src"
 (async function () {
 	const q = new Queue<number>("q1", {
 		onDequeue: (i) => console.log(new Date(), `#>`, i),
-		dequeueInterval: 1000,
+		minInterval: 1000,
 		ignore: ["k2"]
 	}).start();
 

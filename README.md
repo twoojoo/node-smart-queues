@@ -62,7 +62,7 @@ import { Queue } from "node-smart-queues"
 
 const queue = Queue<number>("my-queue", {
 	logger: true,
-	dequeueInterval: 1000,
+	minInterval: 1000,
 	onDequeue: (i, k, q) => console.log(`dequeued item ${i} with key ${k} from queue ${q}`)
 }).start();
 
@@ -89,7 +89,7 @@ import { Queue, redisStorage } from "node-smart-queues"
 const queue = Queue<number>("my-queue", {
 	storage: redisStorage({ host: "localhost", port: 6379, TTLms: 10000 }), //TTL is optional
 	gzip: true,
-	dequeueInterval: 1000,
+	minInterval: 1000,
 	onDequeue: i => console.log(i))
 }).start();
 ```
@@ -129,7 +129,7 @@ const q1 = new Queue<number>("q1", {
 	ignoreNotPrioritized: true, //default false
 	randomPriority: false, //default false
 	ignoreItemCondition: i => i >= 12,
-	dequeueInterval: 2000, //run a dequeue every 2secs (default 0)
+	minInterval: 2000, //run a dequeue every 2secs (default 0)
 	maxRetry: 5, //max onDequeue attempts (default 1 - no errors allowed)
 	onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q), //if last retry errored
 	onMaxRetryAwaited: true, //default true
@@ -142,7 +142,7 @@ q1.key("k1", {
 	onDequeue: async (i, k, q) => console.log("success k2:", i, k, q),
 	onDequeueAwaited: false,
 	ignoreItemCondition: i => i <= 3,
-	dequeueInterval: 5000,
+	minInterval: 5000,
 	maxRetry: 1,
 	onMaxRetry: async (err, i, k, q) => console.log("error k2:", err, i, k, q),
 	onMaxRetryAwaited: false,

@@ -59,7 +59,7 @@ export type KeyRules<T> = {
 	onMaxRetryAwaited?: boolean
 	onDequeue?: OnPop<T>
 	onDequeueAwaited?: boolean
-	dequeueInterval?: number
+	minInterval?: number
 	dequeueSize?: number
 	blocked?: boolean
 }
