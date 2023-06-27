@@ -17,7 +17,7 @@ import { Queue, redisStorage } from "../src"
 		dequeueInterval: 2000, //default 0
 		maxRetry: 5, //default 1 attempt
 		onMaxRetry: async (err, i, k, q) => console.log("error:", err, i, k, q),
-		onMaxRetryAwaited: true, //default false
+		onMaxRetryAwaited: true, //default true
 		mode: "LIFO", //default FIFO
 	})
 
